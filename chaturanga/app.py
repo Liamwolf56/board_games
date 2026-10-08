@@ -1,74 +1,55 @@
 import tkinter as tk
 from tkinter import messagebox
+import sys
 
+class ChaturangaApp:
+    def __init__(self, root, mode="PvP"):
+        self.root = root
+        self.root.title(f"Chaturanga - Mode: {mode}")
+        self.root.geometry("600x700")
+        self.root.config(bg="#34495e")
 
-class ChaturangaGUI:
+        top_frame = tk.Frame(root, bg="#34495e")
+        top_frame.pack(fill=tk.X, padx=10, pady=10)
 
-  def __init__(self, root):
-    self.root = root
-    self.root.title("Chaturanga (Ancient Chess)")
-    self.root.geometry("600x650")
-    self.root.config(bg="#34495e")
+        tk.Button(top_frame, text="📖 How to Play Chaturanga", bg="#f39c12", fg="white", font=("Arial", 10, "bold"), command=self.show_rules).pack(side=tk.LEFT)
+        tk.Label(top_frame, text="🐘 Ancient Ancestor of Chess", font=("Arial", 10, "bold"), bg="#34495e", fg="white").pack(side=tk.RIGHT)
 
-    # Title label
-    title_label = tk.Label(
-        root,
-        text="🐘 Chaturanga (Ancient Chess)",
-        font=("Arial", 16, "bold"),
-        bg="#34495e",
-        fg="white",
-    )
-    title_label.pack(pady=10)
+        title_label = tk.Label(root, text="Chaturanga Board", font=("Arial", 14, "bold"), bg="#34495e", fg="white")
+        title_label.pack(pady=5)
 
-    # Frame for the 8x8 board
-    self.board_frame = tk.Frame(root, bg="#2c3e50", bd=3, relief="solid")
-    self.board_frame.pack(pady=10)
+        self.board_frame = tk.Frame(root, bg="#2c3e50", bd=3, relief="solid")
+        self.board_frame.pack(pady=10)
+        self.create_board()
 
-    self.buttons = {}
-    self.create_board()
-
-  def create_board(self):
-    # Simplified starting piece representations for Chaturanga
-    # R=Ratha (Chariot), N=Ashva (Horse), E=Gaja (Elephant), M=Mantri (General), K=Raja (King), P=Padati (Pawn)
-    initial_setup = [
-        ["R", "N", "E", "M", "K", "E", "N", "R"],
-        ["P", "P", "P", "P", "P", "P", "P", "P"],
-        [".", ".", ".", ".", ".", ".", ".", "."],
-        [".", ".", ".", ".", ".", ".", ".", "."],
-        [".", ".", ".", ".", ".", ".", ".", "."],
-        [".", ".", ".", ".", ".", ".", ".", "."],
-        ["p", "p", "p", "p", "p", "p", "p", "p"],
-        ["r", "n", "e", "m", "k", "e", "n", "r"],
-    ]
-
-    for r in range(8):
-      for c in range(8):
-        bg_color = "#f0d9b5" if (r + c) % 2 == 0 else "#b58863"
-
-        btn = tk.Button(
-            self.board_frame,
-            text=initial_setup[r][c] if initial_setup[r][c] != "." else "",
-            font=("Arial", 20, "bold"),
-            width=3,
-            height=1,
-            bg=bg_color,
-            activebackground=bg_color,
-            command=lambda row=r, col=c: self.square_clicked(row, col),
+    def show_rules(self):
+        rules = (
+            "CHATURANGA RULES:\n\n"
+            "• The historical Indian predecessor to Chess (circa 6th century).\n"
+            "• Played on an 8x8 board.\n"
+            "• Pieces: Raja (King), Mantri (Counselor/General), Gaja (Elephant), Ashva (Horse), Ratha (Chariot), and Padati (Pawn)."
         )
-        btn.grid(row=r, column=c, padx=1, pady=1)
-        self.buttons[(r, c)] = btn
+        messagebox.showinfo("How to Play - Chaturanga", rules)
 
-  def square_clicked(self, row, col):
-    piece = self.buttons[(row, col)]["text"]
-    if piece:
-      messagebox.showinfo(
-          "Chaturanga Piece", f"You clicked piece '{piece}' at position ({row}, {col})"
-      )
-    else:
-      messagebox.showinfo("Chaturanga Board", f"Empty square at position ({row}, {col})")
-
+    def create_board(self):
+        setup = [
+            ["R", "N", "E", "M", "K", "E", "N", "R"],
+            ["P", "P", "P", "P", "P", "P", "P", "P"],
+            [".", ".", ".", ".", ".", ".", ".", "."],
+            [".", ".", ".", ".", ".", ".", ".", "."],
+            [".", ".", ".", ".", ".", ".", ".", "."],
+            [".", ".", ".", ".", ".", ".", ".", "."],
+            ["p", "p", "p", "p", "p", "p", "p", "p"],
+            ["r", "n", "e", "m", "k", "e", "n", "r"]
+        ]
+        for r in range(8):
+            for c in range(8):
+                bg_color = "#f0d9b5" if (r + c) % 2 == 0 else "#b58863"
+                btn = tk.Button(self.board_frame, text=setup[r][c] if setup[r][c] != "." else "", font=("Arial", 18, "bold"), width=3, height=1, bg=bg_color)
+                btn.grid(row=r, column=c, padx=1, pady=1)
 
 if __name__ == "__main__":
-  root = tk.Tk()
-  app = ChaturangaGUI(root)
-  root.mainloop()
+    mode = sys.argv[1] if len(sys.argv) > 1 else "PvP"
+    root = tk.Tk()
+    app = ChaturangaApp(root, mode)
+    root.mainloop()

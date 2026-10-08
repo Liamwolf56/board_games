@@ -10,7 +10,7 @@ class MasterGameHub:
   def __init__(self, root):
     self.root = root
     self.root.title("Master Board Game Hub")
-    self.root.geometry("400x480")
+    self.root.geometry("420x520")
     self.root.config(bg="#1e272e")
 
     # Title
@@ -21,7 +21,44 @@ class MasterGameHub:
         bg="#1e272e",
         fg="white",
     )
-    title_label.pack(pady=20)
+    title_label.pack(pady=15)
+
+    # Game Mode Variable (PvP or PvAI)
+    self.mode_var = tk.StringVar(value="PvP")
+
+    mode_frame = tk.Frame(root, bg="#1e272e")
+    mode_frame.pack(pady=5)
+
+    tk.Label(
+        mode_frame,
+        text="Game Mode:",
+        font=("Arial", 11, "bold"),
+        bg="#1e272e",
+        fg="#d2dae2",
+    ).pack(side=tk.LEFT, padx=5)
+
+    tk.Radiobutton(
+        mode_frame,
+        text="Player vs Player",
+        variable=self.mode_var,
+        value="PvP",
+        bg="#1e272e",
+        fg="white",
+        selectcolor="#485460",
+        activebackground="#1e272e",
+        activeforeground="white",
+    ).pack(side=tk.LEFT, padx=5)
+    tk.Radiobutton(
+        mode_frame,
+        text="Player vs AI",
+        variable=self.mode_var,
+        value="PvAI",
+        bg="#1e272e",
+        fg="white",
+        selectcolor="#485460",
+        activebackground="#1e272e",
+        activeforeground="white",
+    ).pack(side=tk.LEFT, padx=5)
 
     subtitle_label = tk.Label(
         root,
@@ -30,13 +67,12 @@ class MasterGameHub:
         bg="#1e272e",
         fg="#d2dae2",
     )
-    subtitle_label.pack(pady=5)
+    subtitle_label.pack(pady=10)
 
     # Frame for game buttons
     btn_frame = tk.Frame(root, bg="#1e272e")
-    btn_frame.pack(pady=20)
+    btn_frame.pack(pady=10)
 
-    # Games mapped to their folder names
     games = [
         ("♟️ Chess", "chess"),
         ("⛩️ Shogi (Japanese Chess)", "shogi"),
@@ -58,7 +94,7 @@ class MasterGameHub:
           relief="flat",
           command=lambda f=folder_name: self.launch_game(f),
       )
-      btn.pack(pady=8)
+      btn.pack(pady=6)
 
     # Quit Button
     quit_btn = tk.Button(
@@ -71,17 +107,17 @@ class MasterGameHub:
         relief="flat",
         command=root.quit,
     )
-    quit_btn.pack(pady=10)
+    quit_btn.pack(pady=15)
 
   def launch_game(self, folder_name):
-    # Determine the path to the game's app.py inside its folder
     current_dir = os.path.dirname(os.path.abspath(__file__))
     game_path = os.path.join(current_dir, folder_name, "app.py")
+    selected_mode = self.mode_var.get()
 
     if os.path.exists(game_path):
       try:
-        # Launch the game script independently using the current python executable
-        subprocess.Popen([sys.executable, game_path])
+        # Pass the selected mode as a command-line argument to the game app
+        subprocess.Popen([sys.executable, game_path, selected_mode])
       except Exception as e:
         messagebox.showerror(
             "Error", f"Failed to launch {folder_name.capitalize()}: {e}"
