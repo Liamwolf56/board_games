@@ -10,33 +10,30 @@ class MasterGameHub:
   def __init__(self, root):
     self.root = root
     self.root.title("Master Board Game Hub")
-    self.root.geometry("420x520")
+    self.root.geometry("460x680")
     self.root.config(bg="#1e272e")
 
-    # Title
     title_label = tk.Label(
         root,
-        text="🏛️ Master Game Hub",
+        text="🏛️ Master Game Arcade",
         font=("Arial", 20, "bold"),
         bg="#1e272e",
         fg="white",
     )
-    title_label.pack(pady=15)
+    title_label.pack(pady=10)
 
-    # Game Mode Variable (PvP or PvAI)
+    # Game Mode Selection
     self.mode_var = tk.StringVar(value="PvP")
-
     mode_frame = tk.Frame(root, bg="#1e272e")
     mode_frame.pack(pady=5)
 
     tk.Label(
         mode_frame,
-        text="Game Mode:",
-        font=("Arial", 11, "bold"),
+        text="Mode:",
+        font=("Arial", 10, "bold"),
         bg="#1e272e",
         fg="#d2dae2",
     ).pack(side=tk.LEFT, padx=5)
-
     tk.Radiobutton(
         mode_frame,
         text="Player vs Player",
@@ -45,8 +42,6 @@ class MasterGameHub:
         bg="#1e272e",
         fg="white",
         selectcolor="#485460",
-        activebackground="#1e272e",
-        activeforeground="white",
     ).pack(side=tk.LEFT, padx=5)
     tk.Radiobutton(
         mode_frame,
@@ -56,37 +51,32 @@ class MasterGameHub:
         bg="#1e272e",
         fg="white",
         selectcolor="#485460",
-        activebackground="#1e272e",
-        activeforeground="white",
     ).pack(side=tk.LEFT, padx=5)
 
-    subtitle_label = tk.Label(
-        root,
-        text="Select a game to launch:",
-        font=("Arial", 11),
-        bg="#1e272e",
-        fg="#d2dae2",
-    )
-    subtitle_label.pack(pady=10)
-
-    # Frame for game buttons
+    # Scrollable container or organized frame for buttons
     btn_frame = tk.Frame(root, bg="#1e272e")
     btn_frame.pack(pady=10)
 
     games = [
         ("♟️ Chess", "chess"),
-        ("⛩️ Shogi (Japanese Chess)", "shogi"),
-        ("🏮 Xiangqi (Chinese Chess)", "xiangqi"),
-        ("🐘 Chaturanga (Ancient Chess)", "chaturanga"),
+        ("⛩️ Shogi", "shogi"),
+        ("🏮 Xiangqi", "xiangqi"),
+        ("🐘 Chaturanga", "chaturanga"),
+        ("🔴 Connect 4", "connect_4"),
+        ("❌ Tic-Tac-Toe", "tic_tac_toe"),
+        ("🚀 Battleship", "battleship"),
+        ("⭕ Otrio", "otrio"),
+        ("🦁 Sequence for Kids", "sequence_for_kids"),
+        ("🐊 Animal Upon Animal", "animal_upon_animal"),
+        ("🏎️ Monza", "monza"),
     ]
 
     for text, folder_name in games:
       btn = tk.Button(
           btn_frame,
           text=text,
-          font=("Arial", 11, "bold"),
-          width=26,
-          height=2,
+          font=("Arial", 10, "bold"),
+          width=28,
           bg="#485460",
           fg="white",
           activebackground="#0be881",
@@ -94,9 +84,8 @@ class MasterGameHub:
           relief="flat",
           command=lambda f=folder_name: self.launch_game(f),
       )
-      btn.pack(pady=6)
+      btn.pack(pady=3)
 
-    # Quit Button
     quit_btn = tk.Button(
         root,
         text="Exit Hub",
@@ -107,25 +96,16 @@ class MasterGameHub:
         relief="flat",
         command=root.quit,
     )
-    quit_btn.pack(pady=15)
+    quit_btn.pack(pady=10)
 
   def launch_game(self, folder_name):
     current_dir = os.path.dirname(os.path.abspath(__file__))
     game_path = os.path.join(current_dir, folder_name, "app.py")
-    selected_mode = self.mode_var.get()
-
     if os.path.exists(game_path):
-      try:
-        # Pass the selected mode as a command-line argument to the game app
-        subprocess.Popen([sys.executable, game_path, selected_mode])
-      except Exception as e:
-        messagebox.showerror(
-            "Error", f"Failed to launch {folder_name.capitalize()}: {e}"
-        )
+      subprocess.Popen([sys.executable, game_path, self.mode_var.get()])
     else:
       messagebox.showerror(
-          "Not Found",
-          f"Could not find 'app.py' inside the '{folder_name}' folder!",
+          "Error", f"Could not find 'app.py' inside '{folder_name}' folder!"
       )
 
 
