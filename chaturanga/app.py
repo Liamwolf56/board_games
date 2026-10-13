@@ -70,6 +70,7 @@ class ChaturangaApp:
 
   def setup_board_data(self):
     # R=Ratha (Chariot), N=Ashva (Horse), E=Gaja (Elephant), M=Mantri (Counselor), K=Raja (King), P=Padati (Pawn)
+    # Row 0-1: White pieces (Uppercase). Row 6-7: Black pieces (Lowercase).
     self.board = [
         ["R", "N", "E", "M", "K", "E", "N", "R"],
         ["P", "P", "P", "P", "P", "P", "P", "P"],
@@ -101,7 +102,9 @@ class ChaturangaApp:
     moves = []
     is_white = piece.isupper()
     p = piece.lower()
-    fwd = -1 if is_white else 1
+    # White pieces start at top (rows 0-1) and move DOWN (increasing row index).
+    # Black pieces start at bottom (rows 6-7) and move UP (decreasing row index).
+    fwd = 1 if is_white else -1
 
     if p == "p":  # Pawn
       nr, nc = r + fwd, c
