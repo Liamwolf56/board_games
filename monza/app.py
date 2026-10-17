@@ -9,14 +9,14 @@ class MonzaApp:
   def __init__(self, root, mode="PvP"):
     self.root = root
     self.root.title(f"Monza Racing - Mode: {mode}")
-    self.root.geometry("800x760")
+    self.root.geometry("880x720")
     self.root.config(bg="#1e272e")
 
     self.mode = mode
-    self.turn = "Car 1"  # Car 1 (Red 🏎️) vs Car 2 (Blue 🏎️)
+    self.turn = "Car 1"  # Car 1 (Red) vs Car 2 (Blue)
     self.game_over = False
 
-    # Track sequence (12 color tiles)
+    # Track sequence (Tiles 1 to 12)
     self.track_colors = [
         "#e74c3c",
         "#3498db",
@@ -46,7 +46,8 @@ class MonzaApp:
         "WHITE",
     ]
 
-    # Car positions (Index 0 to 11)
+    # Car positions (0 = Off track / Start line; Tile 1 is index 0)
+    # Positions range from 0 (Start line) to 12 (Finish line)
     self.car1_pos = 0
     self.car2_pos = 0
 
@@ -67,7 +68,7 @@ class MonzaApp:
 
     tk.Button(
         top_frame,
-        text="📖 How to Play",
+        text="How to Play",
         bg="#f39c12",
         fg="white",
         font=("Arial", 9, "bold"),
@@ -85,7 +86,7 @@ class MonzaApp:
 
     self.status_label = tk.Label(
         root,
-        text="Turn: Car 1 (Red 🏎️) -> Click '🎲 Roll 6 Dice' to start your shift!",
+        text="Turn: Car 1 (Red) - Click 'Roll 6 Dice' to start!",
         font=("Arial", 11, "bold"),
         bg="#1e272e",
         fg="#e74c3c",
@@ -94,11 +95,11 @@ class MonzaApp:
 
     # Track Visualiser Frame
     track_container = tk.Frame(root, bg="#2c3e50", bd=3, relief="solid")
-    track_container.pack(pady=10, padx=15, fill=tk.X)
+    track_container.pack(pady=10, padx=10, fill=tk.X)
 
     tk.Label(
         track_container,
-        text="🏁 MONZA GRAND PRIX RACETRACK 🏁",
+        text="MONZA GRAND PRIX RACETRACK",
         font=("Arial", 11, "bold"),
         bg="#2c3e50",
         fg="#f1c40f",
@@ -112,11 +113,11 @@ class MonzaApp:
 
     # Dice Controls Container
     dice_container = tk.Frame(root, bg="#1e272e")
-    dice_container.pack(pady=10)
+    dice_container.pack(pady=15)
 
     self.roll_btn = tk.Button(
         dice_container,
-        text="🎲 Roll 6 Dice",
+        text="Roll 6 Dice",
         font=("Arial", 11, "bold"),
         bg="#2ecc71",
         fg="white",
@@ -129,7 +130,7 @@ class MonzaApp:
 
     self.end_turn_btn = tk.Button(
         dice_container,
-        text="🏎️ End Shift",
+        text="End Turn",
         font=("Arial", 10, "bold"),
         bg="#e67e22",
         fg="white",
@@ -144,10 +145,13 @@ class MonzaApp:
   def show_rules(self):
     rules = (
         "MONZA RACING RULES:\n\n"
-        "1. Click 'Roll 6 Dice' to roll your color dice pool.\n"
-        "2. Click a die that matches the exact color of the next adjacent track tile to advance your race car!\n"
-        "3. Chain multiple dice together in one turn to zoom down the track.\n"
-        "4. First race car to cross tile 12 wins the Monza Grand Prix!"
+        "1. Both cars start behind Tile 1.\n"
+        "2. Click 'Roll 6 Dice' to throw all 6 color dice.\n"
+        "3. Click a die that matches the EXACT color of the next tile you need to land on!\n"
+        "   • To move onto Tile 1, click RED.\n"
+        "   • To move onto Tile 2, click BLUE, and so on.\n"
+        "4. Chain multiple matching dice in one turn to zip down the track!\n"
+        "5. First car to reach Tile 12 wins!"
     )
     messagebox.showinfo("How to Play - Monza", rules)
 
@@ -158,16 +162,16 @@ class MonzaApp:
 
       lbl = tk.Label(
           self.track_frame,
-          text=f"{idx+1}\n\n",
+          text=f"Tile {idx+1}\n\n",
           font=("Arial", 9, "bold"),
-          width=5,
+          width=7,
           height=4,
           bg=hex_bg,
           fg=fg_txt,
           relief="solid",
           bd=2,
       )
-      lbl.grid(row=0, column=idx, padx=2)
+      lbl.grid(row=0, column=idx, padx=1)
       self.track_cells.append(lbl)
 
   def roll_dice(self):
@@ -182,12 +186,12 @@ class MonzaApp:
     self.roll_btn.config(state=tk.DISABLED)
     self.end_turn_btn.config(state=tk.NORMAL)
 
+    pos = self.car1_pos if self.turn == "Car 1" else self.car2_pos
+    next_tile_color = self.track_color_names[pos] if pos < 12 else "FINISH"
+
     self.update_dice_ui()
     self.status_label.config(
-        text=(
-            f"Turn: {self.turn} -> Click a matching die to move to the next"
-            " tile!"
-        ),
+        text=f"Turn: {self.turn} - Next Tile Needed: [{next_tile_color}]",
         fg="#f1c40f",
     )
 
@@ -197,15 +201,14 @@ class MonzaApp:
 
     die_color = self.current_dice[idx]
     current_pos = self.car1_pos if self.turn == "Car 1" else self.car2_pos
-    next_pos = current_pos + 1
 
-    if next_pos >= 12:
+    if current_pos >= 12:
       return
 
-    required_color = self.track_color_names[next_pos]
+    # Needed tile is current_pos (0 means Tile 1 / index 0)
+    required_color = self.track_color_names[current_pos]
 
     if die_color == required_color:
-      # Valid movement step!
       self.used_dice_indices.add(idx)
       if self.turn == "Car 1":
         self.car1_pos += 1
@@ -215,24 +218,27 @@ class MonzaApp:
       self.update_track_ui()
       self.update_dice_ui()
 
-      # Check Win Condition
       pos = self.car1_pos if self.turn == "Car 1" else self.car2_pos
-      if pos >= 11:
+      if pos >= 12:
         self.game_over = True
         self.timer_running = False
         messagebox.showinfo(
-            "🏆 Grand Prix Winner!",
-            f"{self.turn} crossed the finish line and wins Monza!",
+            "Game Over", f"{self.turn} crossed the finish line and wins Monza!"
         )
         self.status_label.config(
-            text=f"Winner: {self.turn} 🏁", fg="#f1c40f"
+            text=f"Winner: {self.turn}!", fg="#f1c40f"
         )
         return
+      else:
+        next_needed = self.track_color_names[pos]
+        self.status_label.config(
+            text=f"Turn: {self.turn} - Next Tile Needed: [{next_needed}]",
+            fg="#f1c40f",
+        )
     else:
       messagebox.showwarning(
-          "Color Mismatch",
-          f"Die color ({die_color}) does not match required next tile"
-          f" ({required_color})!",
+          "Mismatch",
+          f"You clicked {die_color}, but the next tile needs {required_color}!",
       )
 
   def finish_turn(self):
@@ -247,9 +253,8 @@ class MonzaApp:
 
     self.turn = "Car 2" if self.turn == "Car 1" else "Car 1"
     color_code = "#e74c3c" if self.turn == "Car 1" else "#3498db"
-    car_name = "Car 1 (Red 🏎️)" if self.turn == "Car 1" else "Car 2 (Blue 🏎️)"
     self.status_label.config(
-        text=f"Turn: {car_name} -> Click '🎲 Roll 6 Dice' to start your shift!",
+        text=f"Turn: {self.turn} - Click 'Roll 6 Dice' to start!",
         fg=color_code,
     )
 
@@ -262,13 +267,11 @@ class MonzaApp:
 
     self.roll_dice()
 
-    # AI attempts to chain matches automatically
     moved = True
     while moved and not self.game_over:
       moved = False
-      next_pos = self.car2_pos + 1
-      if next_pos < 12:
-        req_color = self.track_color_names[next_pos]
+      if self.car2_pos < 12:
+        req_color = self.track_color_names[self.car2_pos]
         for idx, d_color in enumerate(self.current_dice):
           if idx not in self.used_dice_indices and d_color == req_color:
             self.use_die(idx)
@@ -301,12 +304,12 @@ class MonzaApp:
           font=("Arial", 9, "bold"),
           bg=hex_bg,
           fg=fg_txt,
-          width=7,
+          width=6,
           command=lambda i=idx: self.use_die(i),
       )
       if idx in self.used_dice_indices:
         btn.config(state=tk.DISABLED, bg="#7f8c8d", text="USED")
-      btn.pack(side=tk.LEFT, padx=3)
+      btn.pack(side=tk.LEFT, padx=2)
 
   def update_track_ui(self):
     for idx in range(12):
@@ -314,12 +317,14 @@ class MonzaApp:
       fg_txt = "#2c3e50" if hex_bg == "#ecf0f1" else "#ffffff"
 
       cars_text = ""
-      if self.car1_pos == idx:
-        cars_text += "🔴"
-      if self.car2_pos == idx:
-        cars_text += "🔵"
+      # Check if Car 1 is on this tile (position 1 corresponds to index 0)
+      if self.car1_pos - 1 == idx:
+        cars_text += "[C1] "
+      # Check if Car 2 is on this tile
+      if self.car2_pos - 1 == idx:
+        cars_text += "[C2]"
 
-      cell_str = f"{idx+1}\n{self.track_color_names[idx]}\n{cars_text}"
+      cell_str = f"Tile {idx+1}\n{self.track_color_names[idx]}\n{cars_text}"
       self.track_cells[idx].config(text=cell_str, bg=hex_bg, fg=fg_txt)
 
   def update_timer(self):
