@@ -5,111 +5,116 @@ import tkinter as tk
 from tkinter import messagebox
 
 
-class MasterGameHub:
+class MainHubApp:
 
   def __init__(self, root):
     self.root = root
-    self.root.title("Master Board Game Hub")
-    self.root.geometry("460x680")
+    self.root.title("Master Board Game Arcade")
+    self.root.geometry("680x780")
     self.root.config(bg="#1e272e")
 
+    self.selected_mode = tk.StringVar(value="PvP")
+
+    # Title Banner
     title_label = tk.Label(
         root,
-        text="🏛️ Master Game Arcade",
-        font=("Arial", 20, "bold"),
+        text="🎮 MASTER BOARD GAME ARCADE 🎮",
+        font=("Arial", 16, "bold"),
         bg="#1e272e",
-        fg="white",
+        fg="#ffdd59",
     )
-    title_label.pack(pady=10)
+    title_label.pack(pady=15)
 
-    # Game Mode Selection
-    self.mode_var = tk.StringVar(value="PvP")
-    mode_frame = tk.Frame(root, bg="#1e272e")
-    mode_frame.pack(pady=5)
+    # Mode Selector Frame
+    mode_frame = tk.Frame(root, bg="#2c3e50", bd=2, relief="solid")
+    mode_frame.pack(pady=10, padx=20, fill=tk.X)
 
     tk.Label(
         mode_frame,
-        text="Mode:",
-        font=("Arial", 10, "bold"),
-        bg="#1e272e",
-        fg="#d2dae2",
-    ).pack(side=tk.LEFT, padx=5)
-    tk.Radiobutton(
-        mode_frame,
-        text="Player vs Player",
-        variable=self.mode_var,
-        value="PvP",
-        bg="#1e272e",
+        text="Select Game Mode:",
+        font=("Arial", 11, "bold"),
+        bg="#2c3e50",
         fg="white",
-        selectcolor="#485460",
-    ).pack(side=tk.LEFT, padx=5)
-    tk.Radiobutton(
-        mode_frame,
-        text="Player vs AI",
-        variable=self.mode_var,
-        value="PvAI",
-        bg="#1e272e",
-        fg="white",
-        selectcolor="#485460",
-    ).pack(side=tk.LEFT, padx=5)
+    ).pack(side=tk.LEFT, padx=15, pady=8)
 
-    # Scrollable container or organized frame for buttons
-    btn_frame = tk.Frame(root, bg="#1e272e")
-    btn_frame.pack(pady=10)
+    tk.Radiobutton(
+        mode_frame,
+        text="Player vs Player (PvP)",
+        variable=self.selected_mode,
+        value="PvP",
+        font=("Arial", 10, "bold"),
+        bg="#2c3e50",
+        fg="#00d8d6",
+        selectcolor="#1e272e",
+        activebackground="#2c3e50",
+    ).pack(side=tk.LEFT, padx=10)
+
+    tk.Radiobutton(
+        mode_frame,
+        text="Player vs AI (PvAI)",
+        variable=self.selected_mode,
+        value="PvAI",
+        font=("Arial", 10, "bold"),
+        bg="#2c3e50",
+        fg="#ff4757",
+        selectcolor="#1e272e",
+        activebackground="#2c3e50",
+    ).pack(side=tk.LEFT, padx=10)
+
+    # Game List Grid
+    games_frame = tk.Frame(root, bg="#1e272e")
+    games_frame.pack(pady=15, padx=20)
 
     games = [
-        ("♟️ Chess", "chess"),
-        ("⛩️ Shogi", "shogi"),
-        ("🏮 Xiangqi", "xiangqi"),
-        ("🐘 Chaturanga", "chaturanga"),
-        ("🔴 Connect 4", "connect_4"),
-        ("❌ Tic-Tac-Toe", "tic_tac_toe"),
-        ("🚀 Battleship", "battleship"),
-        ("⭕ Otrio", "otrio"),
-        ("🦁 Sequence for Kids", "sequence_for_kids"),
-        ("🐊 Animal Upon Animal", "animal_upon_animal"),
-        ("🏎️ Monza", "monza"),
+        ("♟️ Chess", "chess/app.py"),
+        ("🦹 Shogi", "shogi/app.py"),
+        ("🀄 Xiangqi", "xiangqi/app.py"),
+        ("📜 Chaturanga", "chaturanga/app.py"),
+        ("🏁 Checkers", "checkers/app.py"),
+        ("🔴 Connect 4", "connect4/app.py"),
+        ("❌ Tic-Tac-Toe", "tictactoe/app.py"),
+        ("🚢 Battleship", "battleship/app.py"),
+        ("⭕ Otrio", "otrio/app.py"),
+        ("🦁 Sequence for Kids", "sequence_for_kids/app.py"),
+        ("🐊 Animal Upon Animal", "animal_upon_animal/app.py"),
+        ("🏎️ Monza", "monza/app.py"),
     ]
 
-    for text, folder_name in games:
+    row = 0
+    col = 0
+    for title, script_path in games:
       btn = tk.Button(
-          btn_frame,
-          text=text,
-          font=("Arial", 10, "bold"),
-          width=28,
-          bg="#485460",
+          games_frame,
+          text=title,
+          font=("Arial", 11, "bold"),
+          width=22,
+          height=2,
+          bg="#34495e",
           fg="white",
-          activebackground="#0be881",
-          activeforeground="black",
-          relief="flat",
-          command=lambda f=folder_name: self.launch_game(f),
+          activebackground="#0abde3",
+          activeforeground="white",
+          command=lambda path=script_path: self.launch_game(path),
       )
-      btn.pack(pady=3)
+      btn.grid(row=row, column=col, padx=8, pady=8)
 
-    quit_btn = tk.Button(
-        root,
-        text="Exit Hub",
-        font=("Arial", 10, "bold"),
-        width=15,
-        bg="#ff3838",
-        fg="white",
-        relief="flat",
-        command=root.quit,
-    )
-    quit_btn.pack(pady=10)
+      col += 1
+      if col > 1:
+        col = 0
+        row += 1
 
-  def launch_game(self, folder_name):
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    game_path = os.path.join(current_dir, folder_name, "app.py")
-    if os.path.exists(game_path):
-      subprocess.Popen([sys.executable, game_path, self.mode_var.get()])
-    else:
-      messagebox.showerror(
-          "Error", f"Could not find 'app.py' inside '{folder_name}' folder!"
-      )
+  def launch_game(self, script_path):
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    full_path = os.path.join(base_dir, script_path)
+
+    if not os.path.exists(full_path):
+      messagebox.showerror("Error", f"Game script not found:\n{full_path}")
+      return
+
+    mode = self.selected_mode.get()
+    subprocess.Popen([sys.executable, full_path, mode])
 
 
 if __name__ == "__main__":
   root = tk.Tk()
-  app = MasterGameHub(root)
+  app = MainHubApp(root)
   root.mainloop()
