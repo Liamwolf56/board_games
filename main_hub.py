@@ -10,7 +10,7 @@ class MainHubApp:
   def __init__(self, root):
     self.root = root
     self.root.title("Master Board Game Arcade")
-    self.root.geometry("680x780")
+    self.root.geometry("700x820")
     self.root.config(bg="#1e272e")
 
     self.selected_mode = tk.StringVar(value="PvP")
@@ -71,6 +71,7 @@ class MainHubApp:
         ("🀄 Xiangqi", "xiangqi/app.py"),
         ("📜 Chaturanga", "chaturanga/app.py"),
         ("🏁 Checkers", "checkers/app.py"),
+        ("⚪ Reversi", "reversi/app.py"),
         ("🔴 Connect 4", "connect4/app.py"),
         ("❌ Tic-Tac-Toe", "tictactoe/app.py"),
         ("🚢 Battleship", "battleship/app.py"),
