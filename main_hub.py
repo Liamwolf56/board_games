@@ -10,7 +10,7 @@ class MainHubApp:
   def __init__(self, root):
     self.root = root
     self.root.title("Master Board Game Arcade")
-    self.root.geometry("700x820")
+    self.root.geometry("700x880")
     self.root.config(bg="#1e272e")
 
     self.selected_mode = tk.StringVar(value="PvP")
@@ -61,7 +61,7 @@ class MainHubApp:
         activebackground="#2c3e50",
     ).pack(side=tk.LEFT, padx=10)
 
-    # Game List Grid
+    # Game List Grid (15 Games)
     games_frame = tk.Frame(root, bg="#1e272e")
     games_frame.pack(pady=15, padx=20)
 
@@ -79,6 +79,8 @@ class MainHubApp:
         ("🦁 Sequence for Kids", "sequence_for_kids/app.py"),
         ("🐊 Animal Upon Animal", "animal_upon_animal/app.py"),
         ("🏎️ Monza", "monza/app.py"),
+        ("🎲 Yahtzee", "yahtzee/app.py"),
+        ("🧠 Mastermind", "mastermind/app.py"),
     ]
 
     row = 0
