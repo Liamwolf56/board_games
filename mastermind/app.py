@@ -9,13 +9,14 @@ class MastermindApp:
   def __init__(self, root, mode="PvP"):
     self.root = root
     self.root.title(f"Mastermind - Mode: {mode}")
-    self.root.geometry("640x820")
+    self.root.geometry("660x860")
     self.root.config(bg="#1e272e")
 
     self.mode = mode
     self.game_over = False
     self.current_attempt = 0
     self.max_attempts = 10
+    self.hints_left = 3
 
     # Available colors
     self.colors = ["RED", "BLUE", "GREEN", "YELLOW", "PURPLE", "WHITE"]
@@ -49,6 +50,16 @@ class MastermindApp:
         font=("Arial", 9, "bold"),
         command=self.show_rules,
     ).pack(side=tk.LEFT)
+
+    self.hint_btn = tk.Button(
+        top_frame,
+        text="💡 Hint (3 left)",
+        bg="#9b59b6",
+        fg="white",
+        font=("Arial", 9, "bold"),
+        command=self.give_hint,
+    )
+    self.hint_btn.pack(side=tk.LEFT, padx=10)
 
     self.timer_label = tk.Label(
         top_frame,
@@ -163,9 +174,28 @@ class MastermindApp:
         "2. Click colors from the palette to fill your 4 guess slots.\n"
         "3. Feedback:\n"
         "   • Black Peg (●): Correct color in the EXACT position.\n"
-        "   • White Peg (○): Correct color in the WRONG position."
+        "   • White Peg (○): Correct color in the WRONG position.\n"
+        "4. Click '💡 Hint' if you get stuck (3 hints per match)!"
     )
     messagebox.showinfo("How to Play - Mastermind", rules)
+
+  def give_hint(self):
+    if self.game_over or self.hints_left <= 0:
+      messagebox.showinfo("No Hints", "No more hints remaining!")
+      return
+
+    self.hints_left -= 1
+    self.hint_btn.config(text=f"💡 Hint ({self.hints_left} left)")
+    if self.hints_left == 0:
+      self.hint_btn.config(state=tk.DISABLED, bg="#7f8c8d")
+
+    # Pick a random slot from 1 to 4 to reveal
+    slot = random.randint(0, 3)
+    color = self.secret_code[slot]
+    messagebox.showinfo(
+        "💡 Mastermind Hint",
+        f"HINT: Position {slot + 1} in the secret code is {color}!",
+    )
 
   def select_color(self, color_name):
     if self.game_over or self.active_peg_slot >= 4:
