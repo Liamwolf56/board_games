@@ -1,255 +1,469 @@
 import tkinter as tk
+from tkinter import ttk
 
 
 class HistoryModeFrame(tk.Frame):
 
   def __init__(self, parent, hub_app):
-    super().__init__(parent, bg="#2c3e50", bd=2, relief="solid")
+    super().__init__(parent, bg="#1e272e")
     self.hub_app = hub_app
 
+    # Header
     tk.Label(
         self,
-        text="📜 THE COMPLETE HISTORY OF ARCADE BOARD GAMES",
+        text="📜 Master Board Game Wiki & Encyclopedia",
         font=("Arial", 14, "bold"),
-        bg="#2c3e50",
+        bg="#1e272e",
         fg="#ffdd59",
     ).pack(pady=10)
 
-    self.game_histories = {
-        "Chess": (
-            "CHESS: FROM 6TH CENTURY INDIA TO MODERN DIGITAL ERA\n\n"
-            "• Ancient Origin (c. 600 CE): Chess originated in northern India"
-            " during the Gupta Empire under the name 'Chaturanga', representing"
-            " the four divisions of the military: infantry, cavalry, elephants,"
-            " and chariots.\n\n"
-            "• Spread & Evolution: The game traveled along the Silk Road to"
-            " Persia ('Shatranj') and was brought to Islamic Spain and medieval"
-            " Europe in the 9th and 10th centuries. European rules evolved"
-            " drastically around 1475 CE, giving the Queen and Bishop their"
-            " modern, fast-moving power.\n\n"
-            "• Modern Era: From global championship tournaments to computer"
-            " engines like Deep Blue defeating world champions, Chess is now a"
-            " digital staple played by millions worldwide."
-        ),
-        "Shogi": (
-            "SHOGI: JAPANESE CHESS\n\n"
-            "• Ancient Origin (c. 1100s CE): Shogi (Japanese Chess) arrived in"
-            " Japan from China during the Nara or Heian period, blending"
-            " elements of ancient Chinese chess with native strategic"
-            " concepts.\n\n"
-            "• The Drop Rule Innovation: Unlike Western chess where captured"
-            " pieces are lost forever, Shogi's unique rule allows players to"
-            " 'drop' captured enemy pieces back onto the board as their own,"
-            " eliminating stalemates and creating deeply tactical, dynamic"
-            " games.\n\n"
-            "• Modern Era: Shogi remains one of Japan's most popular intellectual"
-            " sports, played professionally with centuries-old traditions."
-        ),
-        "Xiangqi": (
-            "XIANGQI: CHINESE CHESS\n\n"
-            "• Ancient Origin (c. 200 BCE): Xiangqi traces its roots back to"
-            " the Han Dynasty (and earlier military simulation games). It"
-            " simulates a battle fought across a central river with a "
-            "fortified palace for the General.\n\n"
-            "• Unique Mechanics: Unlike grid intersection rules, Xiangqi pieces"
-            " move along grid lines. Cannons require a screen to jump over, and"
-            " the General and advisors are locked inside the palace.\n\n"
-            "• Modern Era: Xiangqi is immensely popular throughout China and"
-            " Southeast Asia, regularly played in public parks and international"
-            " tournaments."
-        ),
-        "Chaturanga": (
-            "CHATURANG: THE ANCESTOR\n\n"
-            "• Ancient Origin (c. 6th Century CE): Mentioned in ancient Indian"
-            " literature, Chaturanga is recognized globally by historians as the"
-            " common ancestor from which Chess, Shogi, and Xiangqi descended.\n\n"
-            "• Name Meaning: 'Chaturanga' translates to 'four limbs' (infantry,"
-            " cavalry, elephants, and chariots), played with dice in some"
-            " early variations to simulate the fog of war.\n\n"
-            "• Modern Era: Preserved by historians and recreated digitally to"
-            " let modern players experience the very roots of tactical board"
-            " gaming."
-        ),
-        "Checkers": (
-            "CHECKERS (DRAUGHTS): ANCIENT ROOTS\n\n"
-            "• Ancient Origin (c. 3000 BCE): Archaeological finds in the ancient"
-            " city of Ur in Mesopotamia reveal board games resembling checkers"
-            " played over 5,000 years ago. A similar game, Alquerque, was played"
-            " in ancient Egypt.\n\n"
-            "• Evolution: In 12th-century southern France, Alquerque was"
-            " combined with the board of Chess, creating 'Draughts' (known as"
-            " Checkers in North America), introducing forced jumps and King"
-            " crowning.\n\n"
-            "• Modern Era: A simple yet profound mathematical game, Checkers was"
-            " famously solved by computer scientists in 2007 (resulting in a"
-            " guaranteed draw with perfect play)."
-        ),
-        "Reversi": (
-            "REVERSI & OTHELLO: THE FLIPPING BATTLE\n\n"
-            "• Origin (1883): Invented in England by Lewis Waterman under the"
-            " name Reversi. It gained immense popularity in Victorian parlors"
-            " before fading slightly.\n\n"
-            "• The Othello Revival (1971): Goro Hasegawa redesigned and"
-            " patented the game as 'Othello' in Japan, referencing"
-            " Shakespeare's play about conflict and sudden reversals of"
-            " fortune.\n\n"
-            "• Modern Era: A staple strategy game of flanking and disc flipping,"
-            " played worldwide in tournaments and digital app stores."
-        ),
-        "Connect 4": (
-            "CONNECT 4: THE VERTICAL DROP\n\n"
-            "• Origin (1974): Created and published by Milton Bradley (now"
-            " Hasbro) under the name Connect Four, drawing inspiration from"
-            " centuries-old alignment games like Tic-Tac-Toe.\n\n"
-            "• Mechanics: Gravity is the defining feature—forcing players to"
-            " think vertically and set up multi-directional traps across a"
-            " 7x6 grid.\n\n"
-            "• Modern Era: Solved mathematically in 1988 (the first player can"
-            " always force a win with the center column), Connect 4 remains a"
-            " beloved casual classic for all ages."
-        ),
-        "Tic-Tac-Toe": (
-            "TIC-TAC-TOE: ANCIENT PENCIL & PAPER\n\n"
-            "• Ancient Origin (c. 1300 BCE): Early variants of three-in-a-row"
-            " games have been carved into the roofing tiles of ancient Egyptian"
-            " temples and Roman ruins across the empire.\n\n"
-            "• Evolution: Known historically as 'Noughts and Crosses' in the"
-            " UK, it became known as Tic-Tac-Toe in the United States in the"
-            " 20th century.\n\n"
-            "• Modern Era: The quintessential children's puzzle that introduces"
-            " basic logic, game theory, and the concept of unbeatable terminal"
-            " states (cats' games)."
-        ),
-        "Battleship": (
-            "BATTLESHIP: FROM TRENCHES TO TABLETOPS\n\n"
-            "• Origin (WWI Era): Originally played with pencil and paper by"
-            " French officers during World War I under the name "
-            "'L'Attaque'.\n\n"
-            "• Commercial Release (1967): Milton Bradley published the iconic"
-            " plastic grid version with red and white pegs in 1967, turning a"
-            " pen-and-paper pastime into a physical household sensation.\n\n"
-            "• Modern Era: Adapted into video games, movies, and digital"
-            " arcades as the ultimate game of hidden deduction and naval"
-            " strategy."
-        ),
-        "Otrio": (
-            "OTRIO: THE MODERN MULTI-TIERED PUZZLE\n\n"
-            "• Origin (2014): Invented by toy designer Brain Wright and"
-            " published by Spin Master, Otrio was created as a modern evolution"
-            " of traditional Tic-Tac-Toe.\n\n"
-            "• Mechanics: By introducing three concentric ring sizes and three"
-            " win conditions (same color line, ascending/descending size line,"
-            " or concentric rings on one spot), it transforms a simple game"
-            " into a 3D tactical challenge.\n\n"
-            "• Modern Era: Celebrated globally as an award-winning modern family"
-            " and strategy board game."
-        ),
-        "Sequence for Kids": (
-            "SEQUENCE FOR KIDS: ANIMAL ALIGNMENT\n\n"
-            "• Origin (1981 / Modern Variant): The original adult 'Sequence'"
-            " board game was invented by Doug ReQua in 1981, combining cards"
-            " and token placement.\n\n"
-            "• Kids Variant: Streamlined for younger audiences by replacing"
-            " standard playing cards with vibrant animal illustrations, making"
-            " matching and early strategy accessible.\n\n"
-            "• Modern Era: A preschool favorite that teaches pattern recognition"
-            " and tactical blocking."
-        ),
-        "Animal Upon Animal": (
-            "ANIMAL UPON ANIMAL: THE STACKING PHENOMENON\n\n"
-            "• Origin (2005): Created by German game designer Klaus Miltenberger"
-            " and published by HABA, a renowned publisher of children's games.\n\n"
-            "• Mechanics: A dexterity game where players roll dice to stack"
-            " wooden crocodiles, penguins, sheep, and monkeys without causing a"
-            " collapse.\n\n"
-            "• Modern Era: Winner of multiple international game awards for"
-            " bringing physical coordination, laughter, and tactile fun to"
-            " tabletop gaming."
-        ),
-        "Monza": (
-            "MONZA: THE COLOR-MATCHING RACER\n\n"
-            "• Origin (2000): Designed by Jürgen Grunau and published by HABA."
-            " Named after the famous Italian Grand Prix racing circuit.\n\n"
-            "• Mechanics: Instead of numbers, players roll colored dice and"
-            " strategically sequence which adjacent track lanes to jump"
-            " across.\n\n"
-            "• Modern Era: A brilliant educational and strategic board game that"
-            " introduces children and adults to forward planning and color"
-            " probability."
-        ),
-        "Yahtzee": (
-            "YAHTZEE: THE YACHT PASSION PROJECT\n\n"
-            "• Origin (1954): Invented by a wealthy Canadian couple while"
-            " playing dice games on their yacht, originally calling it "
-            "'The Yacht Game'.\n\n"
-            "• Commercial Success (1956): Entrepreneur Edwin S. Lowe recognized"
-            " its addictive nature, bought the rights, renamed it 'Yahtzee',"
-            " and marketed it into a global phenomenon.\n\n"
-            "• Modern Era: One of the best-selling dice games in history, found"
-            " in millions of homes and digital arcades worldwide."
-        ),
-        "Mastermind": (
-            "MASTERMIND: THE COLD WAR CODE BREAKER\n\n"
-            "• Origin (1970): Invented by Mordecai Meirowitz, an Israeli"
-            " postmaster and telecommunications expert. The concept of secret"
-            " code-breaking dates back centuries to cryptographic ciphers.\n\n"
-            "• Commercial Release: After being rejected by several major toy"
-            " companies, Invicta Plastics published it in 1970, and it became an"
-            " instant worldwide blockbuster during the 1970s.\n\n"
-            "• Modern Era: A legendary test of deductive reasoning, logic, and"
-            " elimination."
-        ),
-    }
+    # Main layout (Listbox left, Wiki Viewer right)
+    content_frame = tk.Frame(self, bg="#1e272e")
+    content_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
 
-    content_f = tk.Frame(self, bg="#2c3e50")
-    content_f.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+    # Left: Game Selector Listbox
+    list_frame = tk.Frame(content_frame, bg="#2c3e50")
+    list_frame.pack(side=tk.LEFT, fill=tk.Y, padx=5)
 
-    list_frame = tk.Frame(content_f, bg="#2c3e50")
-    list_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10)
-
-    self.history_list = tk.Listbox(
+    tk.Label(
         list_frame,
-        font=("Arial", 11, "bold"),
-        bg="#1e272e",
+        text="Select a Game:",
+        font=("Arial", 10, "bold"),
+        bg="#2c3e50",
         fg="white",
-        selectbackground="#0984e3",
+    ).pack(padx=5, pady=5)
+
+    self.game_listbox = tk.Listbox(
+        list_frame,
+        font=("Arial", 10, "bold"),
+        bg="#34495e",
+        fg="white",
         width=22,
+        height=22,
+        selectbackground="#0984e3",
     )
-    self.history_list.pack(fill=tk.BOTH, expand=True)
+    self.game_listbox.pack(padx=5, pady=5, fill=tk.Y, expand=True)
+    self.game_listbox.bind("<<ListboxSelect>>", self.on_game_select)
 
-    for g in self.game_histories.keys():
-      self.history_list.insert(tk.END, g)
+    # Right: Text Viewer
+    text_frame = tk.Frame(content_frame, bg="#2c3e50", bd=2, relief="solid")
+    text_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=5)
 
-    self.history_list.bind("<<ListboxSelect>>", self.on_history_select)
-
-    display_frame = tk.Frame(content_f, bg="#1e272e", bd=2, relief="solid")
-    display_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=10)
-
-    self.history_title = tk.Label(
-        display_frame,
-        text="Select a game from the list to explore its full history",
-        font=("Arial", 12, "bold"),
-        bg="#1e272e",
-        fg="#00d8d6",
-    )
-    self.history_title.pack(pady=10)
-
-    self.history_text = tk.Text(
-        display_frame,
-        font=("Arial", 11),
-        bg="#1e272e",
-        fg="white",
+    self.wiki_text = tk.Text(
+        text_frame,
         wrap=tk.WORD,
-        bd=0,
+        font=("Arial", 10),
+        bg="#ecf0f1",
+        fg="#2c3e50",
+        padx=15,
+        pady=15,
     )
-    self.history_text.pack(fill=tk.BOTH, expand=True, padx=15, pady=10)
+    self.wiki_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-  def on_history_select(self, event):
-    selection = self.history_list.curselection()
+    scrollbar = tk.Scrollbar(
+        text_frame, command=self.wiki_text.yview, bg="#ecf0f1"
+    )
+    scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+    self.wiki_text.config(yscrollcommand=scrollbar.set)
+
+    # Comprehensive Database
+    self.games_data = self.build_wiki_database()
+
+    for game_name in sorted(self.games_data.keys()):
+      self.game_listbox.insert(tk.END, game_name)
+
+    if self.game_listbox.size() > 0:
+      self.game_listbox.selection_set(0)
+      self.load_game_wiki(list(sorted(self.games_data.keys()))[0])
+
+  def on_game_select(self, event):
+    selection = self.game_listbox.curselection()
     if selection:
-      game_name = self.history_list.get(selection[0])
-      history_info = self.game_histories[game_name]
+      game_name = self.game_listbox.get(selection[0])
+      self.load_game_wiki(game_name)
 
-      self.history_title.config(text=f"History of {game_name}")
-      self.history_text.delete("1.0", tk.END)
-      self.history_text.insert(tk.END, history_info)
+  def load_game_wiki(self, game_name):
+    data = self.games_data.get(game_name, {})
+
+    self.wiki_text.config(state=tk.NORMAL)
+    self.wiki_text.delete("1.0", tk.END)
+
+    self.wiki_text.insert(
+        tk.END, f"🌟 {game_name.upper()} ENCYCLOPEDIA 🌟\n\n", "header"
+    )
+
+    self.wiki_text.insert(tk.END, "🏛️ Historical Origin & Evolution\n", "subheader")
+    self.wiki_text.insert(
+        tk.END, f"{data.get('origin', 'Data pending.')}\n\n", "body"
+    )
+
+    self.wiki_text.insert(
+        tk.END, "🗺️ How It Was Used Through the Ages\n", "subheader"
+    )
+    self.wiki_text.insert(
+        tk.END, f"{data.get('used', 'Data pending.')}\n\n", "body"
+    )
+
+    self.wiki_text.insert(tk.END, "🌐 Modern Standing Today\n", "subheader")
+    self.wiki_text.insert(
+        tk.END, f"{data.get('today', 'Data pending.')}\n\n", "body"
+    )
+
+    self.wiki_text.insert(
+        tk.END, "📖 How to Play & Piece Mechanics\n", "subheader"
+    )
+    self.wiki_text.insert(
+        tk.END, f"{data.get('rules', 'Data pending.')}\n", "body"
+    )
+
+    self.wiki_text.tag_config(
+        "header", font=("Arial", 14, "bold"), foreground="#2980b9"
+    )
+    self.wiki_text.tag_config(
+        "subheader", font=("Arial", 11, "bold"), foreground="#d35400"
+    )
+    self.wiki_text.tag_config("body", font=("Arial", 10), foreground="#2c3e50")
+    self.wiki_text.config(state=tk.DISABLED)
+
+  def build_wiki_database(self):
+    return {
+        "Chess": {
+            "origin": (
+                "Chess evolved from Chaturanga in 6th-century India before"
+                " spreading into Persia as Shatranj. Following the Islamic"
+                " expansion, it entered Europe where its rules accelerated"
+                " during the 15th century into modern chess."
+            ),
+            "used": (
+                "Historically used by monarchs, scholars, and knights as a"
+                " tool for studying military tactics, statecraft, and"
+                " courtly honor. During the Cold War, it served as an"
+                " intellectual battleground between superpowers."
+            ),
+            "today": (
+                "Today, chess is a globally recognized sport overseen by FIDE,"
+                " enjoyed by millions across online hubs, Grandmaster"
+                " tournaments, and AI research programs."
+            ),
+            "rules": (
+                "• Played on an 8x8 grid. Goal: Checkmate the opposing King.\n•"
+                " King (♔): Moves 1 square any direction.\n• Queen (♕): Moves"
+                " any vacant distance horizontally, vertically, or"
+                " diagonally.\n• Rook (♖): Moves horizontally or vertically.\n•"
+                " Bishop (♗): Moves diagonally.\n• Knight (♘): Moves in an"
+                " L-shape and jumps over pieces.\n• Pawn (♙): Moves forward 1"
+                " (or 2 on start) and captures diagonally."
+            ),
+        },
+        "Shogi": {
+            "origin": (
+                "Shogi (Japanese Chess) evolved from Chaturanga via China and"
+                " Korea, developing its signature 'drop rule' during Japan's"
+                " Muromachi period (1336–1573)."
+            ),
+            "used": (
+                "Utilized by samurai commanders and feudal lords to study"
+                " tactical adaptability, resource recycling, and field"
+                " logistics."
+            ),
+            "today": (
+                "Remains Japan's premier strategy tradition with professional"
+                " Meijin title matches broadcast nationally."
+            ),
+            "rules": (
+                "• Played on a 9x9 grid. Goal: Capture the enemy King.\n• Drop"
+                " Rule: Captured enemy pieces are added to your hand and dropped"
+                " onto empty squares as your own!\n• King (♔): Moves 1 square"
+                " any direction.\n• Rook (♖): Moves in cardinal lines.\n• Bishop"
+                " (♗): Moves diagonally.\n• Gold General (★): Moves 1 square in"
+                " 6 directions.\n• Silver General (◆): Moves 1 square"
+                " diagonally or 1 forward.\n• Knight (♘): Jumps 2 forward, 1"
+                " sideways.\n• Lance (▲): Moves forward any distance.\n• Pawn"
+                " (●): Moves and captures 1 square forward."
+            ),
+        },
+        "Xiangqi": {
+            "origin": (
+                "Xiangqi (Chinese Chess) originated over 2,000 years ago during"
+                " the Warring States period, modeling Chinese battlefields"
+                " divided by the Yellow River."
+            ),
+            "used": (
+                "Employed by Chinese generals and strategists to practice choke"
+                " point defense, river crossings, and artillery positioning."
+            ),
+            "today": (
+                "One of the world's most popular board games, played daily"
+                " across public parks and competitive leagues in Asia."
+            ),
+            "rules": (
+                "• Played on grid intersections (9x10) divided by a River and"
+                " Palace. Goal: Trap the General.\n• General (♔): Confined to"
+                " Palace; moves 1 step cardinally.\n• Advisors (★): Confined to"
+                " Palace; move 1 step diagonally.\n• Elephants (♗): Move 2"
+                " steps diagonally; cannot cross River.\n• Horses (♘): Move 1"
+                " step cardinally, 1 step diagonally (can be blocked).\n•"
+                " Chariots (♖): Move along lines like a Rook.\n• Cannons (◎):"
+                " Move like a Chariot, but MUST jump a piece to capture.\n•"
+                " Soldiers (●): Move 1 step forward; after crossing River, can"
+                " also move sideways."
+            ),
+        },
+        "Chaturanga": {
+            "origin": (
+                "The ancient 6th-century Indian game created during the Gupta"
+                " Empire, serving as the common ancestor of Chess, Shogi, and"
+                " Xiangqi."
+            ),
+            "used": (
+                "Designed to simulate the four classical divisions of ancient"
+                " Indian warfare: Infantry, Cavalry, Elephants, and Chariots."
+            ),
+            "today": (
+                "Studied by gaming historians as the foundational milestone of"
+                " all modern abstract strategy games."
+            ),
+            "rules": (
+                "• Played on an uncheckered 8x8 Ashtāpada board. Goal:"
+                " Decimate enemy forces or trap the King.\n• King (♔): Moves 1"
+                " square any direction.\n• Counselor (♕): Ancestor of the Queen;"
+                " moves 1 square diagonally.\n• Elephant (♗): Moves 2 squares"
+                " diagonally, jumping over interjacent pieces.\n• Horse (♘):"
+                " Moves identically to the modern Knight.\n• Chariot (♖): Moves"
+                " identically to the modern Rook.\n• Pawn (♙): Moves 1 square"
+                " forward, captures 1 square diagonally."
+            ),
+        },
+        "Checkers": {
+            "origin": (
+                "Evolved from ancient Middle Eastern board games like Ur and"
+                " Alquerque into modern Draughts in 12th-century France."
+            ),
+            "used": (
+                "Used throughout history as a accessible exercise in diagonal"
+                " spatial control and forced jump calculations."
+            ),
+            "today": (
+                "Played worldwide in informal settings and high-level"
+                " tournament championships featuring mathematical checkers"
+                " engines."
+            ),
+            "rules": (
+                "• Played on dark squares of an 8x8 grid. Goal: Capture all"
+                " opponent pieces or block their moves.\n• Regular Pieces:"
+                " Move 1 step diagonally forward. Capture by jumping over an"
+                " enemy piece into an empty square.\n• Kings: Created when a"
+                " piece reaches the far rank. Kings can move and jump both"
+                " forward and backward!"
+            ),
+        },
+        "Reversi": {
+            "origin": (
+                "Invented in Victorian England in 1883 by Lewis Waterman and"
+                " John W. Mollett, later trademarked as Othello in Japan."
+            ),
+            "used": (
+                "Leveraged as a tactical demonstration of sudden momentum"
+                " flips and edge control in logical reasoning."
+            ),
+            "today": (
+                "Features an international circuit with world championships"
+                " adhering to the slogan: 'A minute to learn, a lifetime to"
+                " master.'"
+            ),
+            "rules": (
+                "• Played on an 8x8 board with 2-sided disks (Black/White)."
+                " Goal: Own the most disks when the board fills.\n• Placement:"
+                " Place a disk so that it traps 1 or more opponent disks"
+                " between your new disk and an existing friendly disk in a"
+                " straight line.\n• Flip: All trapped opponent disks flip to"
+                " your color!"
+            ),
+        },
+        "Connect 4": {
+            "origin": (
+                "Created by Howard Wexler and Ned Strongin, released"
+                " commercially by Milton Bradley in 1974."
+            ),
+            "used": (
+                "Popularized in education as a foundational game for teaching"
+                " pattern recognition and vertical gravity tactics."
+            ),
+            "today": (
+                "A staple family game mathematically solved as a first-player"
+                " win under perfect play."
+            ),
+            "rules": (
+                "• Played on a vertical 7-column, 6-row grid. Goal: Connect 4"
+                " of your colored disks in a row.\n• Mechanics: Players alternate"
+                " dropping disks down a chosen column. The disk falls to the"
+                " lowest open row.\n• Win Condition: Form a line of 4 horizontal,"
+                " vertical, or diagonal disks."
+            ),
+        },
+        "Tic-Tac-Toe": {
+            "origin": (
+                "Traced back to ancient Egypt and Rome around 100 BC as 'Terni"
+                " Lapilli' carved into marble counters."
+            ),
+            "used": (
+                "Used across millennia as an introductory exercise in zero-sum"
+                " game theory and grid strategy."
+            ),
+            "today": (
+                "The world's most ubiquitous simple game, played everywhere as a"
+                " quick pastime."
+            ),
+            "rules": (
+                "• Played on a 3x3 grid. Goal: Align 3 of your symbols (X or"
+                " O).\n• Rules: Players alternate placing marks in empty"
+                " cells. First to get 3 in a row horizontally, vertically, or"
+                " diagonally wins."
+            ),
+        },
+        "Battleship": {
+            "origin": (
+                "Evolved from World War I French paper game 'L'Attaque' into"
+                " the 1967 Milton Bradley plastic peg board."
+            ),
+            "used": (
+                "Simulates naval radar scanning, hidden grid positioning, and"
+                " target deduction."
+            ),
+            "today": (
+                "A classic guessing strategy game adapted into digital,"
+                " mobile, and arcade versions worldwide."
+            ),
+            "rules": (
+                "• Played on twin 10x10 grids. Goal: Sink all 5 enemy ships.\n•"
+                " Setup: Secretly arrange Carrier (5), Battleship (4), Cruiser"
+                " (3), Submarine (3), and Destroyer (2).\n• Gameplay: Call out"
+                " coordinate shots ('B-4'). Opponent responds 'Hit' or"
+                " 'Miss'."
+            ),
+        },
+        "Otrio": {
+            "origin": (
+                "Designed by Brady Peterson in 2015 as an elevated multi-tier"
+                " extension of classic Tic-Tac-Toe."
+            ),
+            "used": (
+                "Utilized in modern game design to demonstrate nested spatial"
+                " dimensions and multi-front defense."
+            ),
+            "today": (
+                "An award-winning strategy board game enjoyed in casual and"
+                " competitive abstract strategy circles."
+            ),
+            "rules": (
+                "• Played on a grid using 3 sizes of concentric rings (Large,"
+                " Medium, Small).\n• Win Conditions:\n  1. Three of your same-size"
+                " pieces in a row.\n  2. Three of your pieces in ascending or"
+                " descending size order.\n  3. Three of your pieces nested inside"
+                " the SAME space!"
+            ),
+        },
+        "Sequence for Kids": {
+            "origin": (
+                "Developed as an early-childhood adaptation of the popular"
+                " 1981 Sequence board game by Jax Ltd."
+            ),
+            "used": (
+                "Used in primary education to foster animal visual matching,"
+                " hand management, and early strategic planning."
+            ),
+            "today": (
+                "A leading children's board game across schools and homes"
+                " worldwide."
+            ),
+            "rules": (
+                "• Played with animal cards and a matching board grid. Goal:"
+                " Get 4 chips in a row.\n• Mechanics: Play an animal card from"
+                " your hand and place a chip on the matching board space.\n•"
+                " Special Cards: Dragon cards remove an opponent chip; Unicorn"
+                " cards act as wild spaces!"
+            ),
+        },
+        "Animal Upon Animal": {
+            "origin": (
+                "Designed by Klaus Miltenberger and published by HABA in 2005"
+                " in Germany."
+            ),
+            "used": (
+                "Promotes fine motor skills, structural balance inspection, and"
+                " risk mitigation."
+            ),
+            "today": (
+                "Widely considered one of the benchmark physical dexterity"
+                " games in modern tabletop history."
+            ),
+            "rules": (
+                "• Played with 29 wooden animals. Goal: Be the first player to"
+                " place all your animals onto the shared stack.\n• Mechanics:"
+                " Roll the die to determine how many animals to stack on top of"
+                " the central Crocodile base. If any drop, you must take them"
+                " into your supply!"
+            ),
+        },
+        "Monza": {
+            "origin": (
+                "Created by Jürgen P.K. Grunau for HABA in 2000, named after"
+                " the famous Italian Grand Prix circuit."
+            ),
+            "used": (
+                "Teaches children multi-step combinatorial thinking and color"
+                " sequence planning."
+            ),
+            "today": (
+                "A world-renowned educational racing game praised for replacing"
+                " pure luck with tactical choices."
+            ),
+            "rules": (
+                "• Played on a multi-lane color-coded track. Goal: Cross the"
+                " finish line first.\n• Mechanics: Roll 6 colored dice."
+                " Sequence your dice to move your race car step-by-step onto"
+                " matching colored track squares."
+            ),
+        },
+        "Yahtzee": {
+            "origin": (
+                "Invented in 1954 by a wealthy Canadian couple who played it on"
+                " their yacht ('The Yacht Game'), acquired by E.S. Lowe in"
+                " 1956."
+            ),
+            "used": (
+                "Teaches mathematical probability, score-card optimization, and"
+                " tactical risk management."
+            ),
+            "today": (
+                "Sells over 50 million sets annually globally, remaining a"
+                " cornerstone family classic."
+            ),
+            "rules": (
+                "• Played with 5 dice and a scorecard. Goal: Score the highest"
+                " points across 13 rounds.\n• Mechanics: On your turn, roll die"
+                " up to 3 times, locking desired dice. Fill 1 open category on"
+                " your scorecard (3 of a Kind, Full House, Straight, or Yahtzee"
+                " - 5 of a kind)."
+            ),
+        },
+        "Mastermind": {
+            "origin": (
+                "Invented by Israeli postal worker Mordecai Meirowitz in 1970,"" becoming one of the most successful puzzle games of the 1970s."
+            ),
+            "used": (
+                "Used in computer science and psychology to study deductive"
+                " logic, information elimination, and codebreaking algorithms."
+            ),
+            "today": (
+                "A timeless logic puzzle benchmark played physically and"
+                " digitally across the globe."
+            ),
+            "rules": (
+                "• Codemaker sets a hidden code of 4 colored pegs. Goal:"
+                " Codebreaker guesses code within 10 turns.\n• Feedback Pegs:\n "
+                " Black Peg = Right color in the RIGHT position.\n  White Peg ="
+                " Right color in the WRONG position."
+            ),
+        },
+    }
