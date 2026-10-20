@@ -1,4 +1,5 @@
 import os
+import subprocess
 import sys
 import tkinter as tk
 
@@ -89,6 +90,22 @@ class MainHubApp:
     for frame in self.screens.values():
       frame.pack_forget()
     self.screens[screen_name].pack(fill=tk.BOTH, expand=True)
+
+  def launch_game(self, script_path):
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    full_path = os.path.join(base_dir, script_path)
+
+    if not os.path.exists(full_path):
+      tk.messagebox.showerror("Error", f"Game script not found:\n{full_path}")
+      return
+
+    mode = self.selected_mode.get() if hasattr(self, "selected_mode") else "PvP"
+
+    # Automatically use virtual environment python if available
+    venv_python = os.path.join(base_dir, "venv", "bin", "python3")
+    python_executable = venv_python if os.path.exists(venv_python) else sys.executable
+
+    subprocess.Popen([python_executable, full_path, mode])
 
 
 if __name__ == "__main__":

@@ -8,299 +8,264 @@ class XiangqiApp:
   def __init__(self, root, mode="PvP"):
     self.root = root
     self.root.title(f"Xiangqi (Chinese Chess) - Mode: {mode}")
-    self.root.geometry("650x880")
-    self.root.config(bg="#2c3e50")
+    self.root.geometry("680x820")
+    self.root.config(bg="#f4c2c2")
 
     self.mode = mode
+    self.board = [[None for _ in range(9)] for _ in range(10)]
+    self.turn = 1
     self.selected_square = None
-    self.turn = "Red"  # Red (Uppercase) vs Black (Lowercase)
-    self.game_over = False
-    self.valid_moves = []
 
-    # Match Timer (300 seconds / 5 mins per player)
-    self.red_time = 300
-    self.black_time = 300
+    self.time_red = 600
+    self.time_black = 600
     self.timer_running = True
 
-    top_frame = tk.Frame(root, bg="#2c3e50")
+    # Reliable Monochrome Unicode Symbols for Xiangqi
+    self.symbols = {
+        "GENERAL": "♔",
+        "ADVISOR": "★",
+        "ELEPHANT": "♗",
+        "HORSE": "♘",
+        "CHARIOT": "♖",
+        "CANNON": "◎",
+        "SOLDIER": "●",
+    }
+
+    top_frame = tk.Frame(root, bg="#f4c2c2")
     top_frame.pack(fill=tk.X, padx=10, pady=10)
 
     tk.Button(
         top_frame,
-        text="📖 How to Play",
-        bg="#f39c12",
+        text="New Game",
+        bg="#c0392b",
         fg="white",
         font=("Arial", 9, "bold"),
-        command=self.show_rules,
-    ).pack(side=tk.LEFT)
+        command=self.new_game,
+    ).pack(side=tk.LEFT, padx=5)
+
+    tk.Button(
+        top_frame,
+        text="How to Play",
+        bg="#34495e",
+        fg="white",
+        font=("Arial", 9, "bold"),
+        command=self.show_instructions,
+    ).pack(side=tk.LEFT, padx=5)
 
     self.timer_label = tk.Label(
         top_frame,
-        text="Red: 05:00 | Black: 05:00",
-        font=("Arial", 11, "bold"),
-        bg="#2c3e50",
-        fg="white",
+        text="Red: 10:00 | Black: 10:00",
+        font=("Arial", 10, "bold"),
+        bg="#f4c2c2",
+        fg="#c0392b",
     )
-    self.timer_label.pack(side=tk.RIGHT)
+    self.timer_label.pack(side=tk.RIGHT, padx=5)
 
     self.status_label = tk.Label(
-        root,
-        text="Turn: Red (Select a piece)",
+        top_frame,
+        text="Red's Turn",
         font=("Arial", 11, "bold"),
-        bg="#2c3e50",
-        fg="#1abc9c",
+        bg="#f4c2c2",
+        fg="#c0392b",
     )
-    self.status_label.pack(pady=5)
+    self.status_label.pack(side=tk.RIGHT, padx=10)
 
-    self.board_frame = tk.Frame(root, bg="#d35400", bd=3, relief="solid")
-    self.board_frame.pack(pady=5)
+    board_frame = tk.Frame(root, bg="#e67e22", bd=4, relief="solid")
+    board_frame.pack(pady=10)
 
-    self.setup_board_data()
-    self.create_board_ui()
-    self.update_timer()
-
-  def show_rules(self):
-    rules = (
-        "XIANGQI RULES & VALID MOVES:\n\n"
-        "• 10x9 grid separated by a River.\n"
-        "• Green squares show valid traditional moves for the selected piece.\n"
-        "• Generals (G/g) must stay inside their 9-square Palace.\n"
-        "• Goal: Capture the opposing General."
-    )
-    messagebox.showinfo("How to Play - Xiangqi", rules)
-
-  def setup_board_data(self):
-    # R=Chariot, H=Horse, E=Elephant, A=Advisor, G=General, C=Cannon, S=Soldier
-    self.board = [
-        ["R", "H", "E", "A", "G", "A", "E", "H", "R"],
-        [".", ".", ".", ".", ".", ".", ".", ".", "."],
-        [".", "C", ".", ".", ".", ".", ".", "C", "."],
-        ["S", ".", "S", ".", "S", ".", "S", ".", "S"],
-        [".", ".", ".", ".", ".", ".", ".", ".", "."],
-        [".", ".", ".", ".", ".", ".", ".", ".", "."],
-        ["s", ".", "s", ".", "s", ".", "s", ".", "s"],
-        [".", "c", ".", ".", ".", ".", ".", "c", "."],
-        [".", ".", ".", ".", ".", ".", ".", ".", "."],
-        ["r", "h", "e", "a", "g", "a", "e", "h", "r"],
-    ]
-
-  def create_board_ui(self):
-    self.buttons = {}
+    self.squares = {}
     for r in range(10):
       for c in range(9):
         btn = tk.Button(
-            self.board_frame,
+            board_frame,
             text="",
-            font=("Arial", 12, "bold"),
+            font=("Arial", 14, "bold"),
             width=3,
             height=1,
-            command=lambda row=r, col=c: self.square_clicked(row, col),
+            bg="#fde3a7",
+            command=lambda row=r, col=c: self.on_square_click(row, col),
         )
         btn.grid(row=r, column=c, padx=1, pady=1)
-        self.buttons[(r, c)] = btn
+        self.squares[(r, c)] = btn
+
+    self.setup_board()
+    self.update_ui()
+    self.run_timer()
+
+  def setup_board(self):
+    self.board = [[None for _ in range(9)] for _ in range(10)]
+    self.turn = 1
+    self.time_red = 600
+    self.time_black = 600
+
+    black_back = [
+        "CHARIOT",
+        "HORSE",
+        "ELEPHANT",
+        "ADVISOR",
+        "GENERAL",
+        "ADVISOR",
+        "ELEPHANT",
+        "HORSE",
+        "CHARIOT",
+    ]
+    for c, p in enumerate(black_back):
+      self.board[0][c] = {"type": p, "player": 2}
+
+    self.board[2][1] = {"type": "CANNON", "player": 2}
+    self.board[2][7] = {"type": "CANNON", "player": 2}
+    for c in range(0, 9, 2):
+      self.board[3][c] = {"type": "SOLDIER", "player": 2}
+
+    for c in range(0, 9, 2):
+      self.board[6][c] = {"type": "SOLDIER", "player": 1}
+    self.board[7][1] = {"type": "CANNON", "player": 1}
+    self.board[7][7] = {"type": "CANNON", "player": 1}
+
+    red_back = [
+        "CHARIOT",
+        "HORSE",
+        "ELEPHANT",
+        "ADVISOR",
+        "GENERAL",
+        "ADVISOR",
+        "ELEPHANT",
+        "HORSE",
+        "CHARIOT",
+    ]
+    for c, p in enumerate(red_back):
+      self.board[9][c] = {"type": p, "player": 1}
+
+  def new_game(self):
+    self.setup_board()
+    self.selected_square = None
     self.update_ui()
 
-  def get_valid_moves(self, r, c, piece):
-    moves = []
-    is_red = piece.isupper()
-    p = piece.lower()
+  def show_instructions(self):
+    messagebox.showinfo(
+        "How to Play Xiangqi",
+        "• Xiangqi is Chinese Chess played across a river.\n• Cannons must jump"
+        " over another piece to capture.\n• Goal: Capture the opponent's"
+        " General (♔).",
+    )
 
-    if p == "s":  # Soldier
-      fwd = -1 if is_red else 1
-      nr, nc = r + fwd, c
-      if 0 <= nr < 10 and 0 <= nc < 9:
-        if self.board[nr][nc] == "." or self.board[nr][nc].isupper() != is_red:
-          moves.append((nr, nc))
-      # Cross river sideways movement
-      crossed_river = (is_red and r < 5) or (not is_red and r > 4)
-      if crossed_river:
-        for dc in [-1, 1]:
-          nc = c + dc
-          if 0 <= nc < 9:
-            if (
-                self.board[r][nc] == "."
-                or self.board[r][nc].isupper() != is_red
-            ):
-              moves.append((r, nc))
+  def run_timer(self):
+    if self.timer_running:
+      if self.turn == 1:
+        self.time_red = max(0, self.time_red - 1)
+      else:
+        self.time_black = max(0, self.time_black - 1)
 
-    elif p == "g":  # General
-      palace_rows = range(7, 10) if is_red else range(0, 3)
-      palace_cols = range(3, 6)
-      for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-        nr, nc = r + dr, c + dc
-        if nr in palace_rows and nc in palace_cols:
-          if self.board[nr][nc] == "." or self.board[nr][nc].isupper() != is_red:
-            moves.append((nr, nc))
+      mr, sr = divmod(self.time_red, 60)
+      mb, sb = divmod(self.time_black, 60)
+      self.timer_label.config(
+          text=f"Red: {mr:02d}:{sr:02d} | Black: {mb:02d}:{sb:02d}"
+      )
 
-    elif p == "r":  # Chariot (Rook-like)
-      for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-        step = 1
-        while True:
-          nr, nc = r + dr * step, c + dc * step
-          if not (0 <= nr < 10 and 0 <= nc < 9):
-            break
-          target = self.board[nr][nc]
-          if target == ".":
-            moves.append((nr, nc))
-          else:
-            if target.isupper() != is_red:
-              moves.append((nr, nc))
-            break
-          step += 1
+      if self.time_red == 0 or self.time_black == 0:
+        winner = "Black" if self.time_red == 0 else "Red"
+        messagebox.showinfo("Time Out", f"Time's up! {winner} wins!")
+        return
 
-    elif p == "c":  # Cannon (moves like chariot, jumps 1 piece to capture)
-      for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-        step = 1
-        jumped = False
-        while True:
-          nr, nc = r + dr * step, c + dc * step
-          if not (0 <= nr < 10 and 0 <= nc < 9):
-            break
-          target = self.board[nr][nc]
-          if not jumped:
-            if target == ".":
-              moves.append((nr, nc))
-            else:
-              jumped = True
-          else:
-            if target != ".":
-              if target.isupper() != is_red:
-                moves.append((nr, nc))
-              break
-          step += 1
+      self.root.after(1000, self.run_timer)
 
-    else:
-      # General fallback for other pieces (adjacent steps)
-      for dr in [-1, 0, 1]:
-        for dc in [-1, 0, 1]:
-          if dr == 0 and dc == 0:
-            continue
-          nr, nc = r + dr, c + dc
-          if 0 <= nr < 10 and 0 <= nc < 9:
-            target = self.board[nr][nc]
-            if target == "." or target.isupper() != is_red:
-              moves.append((nr, nc))
-
-    return moves
-
-  def square_clicked(self, r, c):
-    if self.game_over:
-      return
+  def on_square_click(self, r, c):
     piece = self.board[r][c]
 
     if self.selected_square is None:
-      if piece != ".":
-        is_red = piece.isupper()
-        current_is_red = self.turn == "Red"
-        if (current_is_red and is_red) or (not current_is_red and not is_red):
-          self.selected_square = (r, c)
-          self.valid_moves = self.get_valid_moves(r, c, piece)
-          self.update_ui()
+      if piece and piece["player"] == self.turn:
+        self.selected_square = (r, c)
+        self.highlight_squares(r, c)
     else:
       sr, sc = self.selected_square
-      if (r, c) in self.valid_moves:
-        target_piece = self.board[r][c]
+      if (sr, sc) == (r, c):
+        self.selected_square = None
+        self.update_ui()
+        return
+
+      target = self.board[r][c]
+      if target is None or target["player"] != self.turn:
         self.board[r][c] = self.board[sr][sc]
-        self.board[sr][sc] = "."
+        self.board[sr][sc] = None
+        self.selected_square = None
+        self.turn = 2 if self.turn == 1 else 1
+        self.update_ui()
 
-        if target_piece.lower() == "g":
-          self.game_over = True
-          self.timer_running = False
-          messagebox.showinfo(
-              "🏆 Game Over!", f"{self.turn} captured the General!"
-          )
-          self.status_label.config(
-              text=f"Game Over: {self.turn} Wins!", fg="#f1c40f"
-          )
-          self.selected_square = None
-          self.valid_moves = []
-          self.update_ui()
-          return
-
-        self.finish_turn()
+        if self.turn == 2 and not self.check_game_over():
+          self.root.after(400, self.ai_move)
       else:
-        if piece != "." and piece.isupper() == self.board[sr][sc].isupper():
-          self.selected_square = (r, c)
-          self.valid_moves = self.get_valid_moves(r, c, piece)
-          self.update_ui()
-        else:
-          self.selected_square = None
-          self.valid_moves = []
-          self.update_ui()
+        self.selected_square = (r, c)
+        self.highlight_squares(r, c)
 
-  def finish_turn(self):
-    self.selected_square = None
-    self.valid_moves = []
-    self.turn = "Black" if self.turn == "Red" else "Red"
-    color_code = "#e74c3c" if self.turn == "Red" else "#f1c40f"
-    self.status_label.config(text=f"Turn: {self.turn} Player", fg=color_code)
+  def highlight_squares(self, r, c):
     self.update_ui()
-
-    if self.mode == "PvAI" and self.turn == "Black" and not self.game_over:
-      self.root.after(600, self.ai_move)
+    self.squares[(r, c)].config(bg="#7b68ee")
+    for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+      nr, nc = r + dr, c + dc
+      if 0 <= nr < 10 and 0 <= nc < 9:
+        self.squares[(nr, nc)].config(bg="#85bb65")
 
   def ai_move(self):
+    if self.check_game_over():
+      return
     import random
 
-    black_pieces = []
+    moves = []
     for r in range(10):
       for c in range(9):
         p = self.board[r][c]
-        if p != "." and p.islower():
-          moves = self.get_valid_moves(r, c, p)
-          if moves:
-            black_pieces.append((r, c, moves))
+        if p and p["player"] == 2:
+          for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+            nr, nc = r + dr, c + dc
+            if 0 <= nr < 10 and 0 <= nc < 9:
+              t = self.board[nr][nc]
+              if t is None or t["player"] != 2:
+                moves.append(((r, c), (nr, nc)))
 
-    if black_pieces:
-      fr, fc, moves = random.choice(black_pieces)
-      tr, tc = random.choice(moves)
-      target = self.board[tr][tc]
-      self.board[tr][tc] = self.board[fr][fc]
-      self.board[fr][fc] = "."
+    if moves:
+      (sr, sc), (tr, tc) = random.choice(moves)
+      self.board[tr][tc] = self.board[sr][sc]
+      self.board[sr][sc] = None
 
-      if target.lower() == "g":
-        self.game_over = True
-        self.timer_running = False
-        messagebox.showinfo("🏆 Game Over!", "Black AI captured the General!")
-        return
+    self.turn = 1
+    self.update_ui()
+    self.check_game_over()
 
-    self.finish_turn()
+  def check_game_over(self):
+    r_gen, b_gen = False, False
+    for r in range(10):
+      for c in range(9):
+        p = self.board[r][c]
+        if p and p["type"] == "GENERAL":
+          if p["player"] == 1:
+            r_gen = True
+          elif p["player"] == 2:
+            b_gen = True
 
-  def update_timer(self):
-    if self.timer_running and not self.game_over:
-      if self.turn == "Red":
-        if self.red_time > 0:
-          self.red_time -= 1
-      else:
-        if self.black_time > 0:
-          self.black_time -= 1
-
-      r_min, r_sec = divmod(self.red_time, 60)
-      b_min, b_sec = divmod(self.black_time, 60)
-      self.timer_label.config(
-          text=f"Red: {r_min:02d}:{r_sec:02d} | Black: {b_min:02d}:{b_sec:02d}"
-      )
-
-      if self.red_time == 0 or self.black_time == 0:
-        self.game_over = True
-        self.timer_running = False
-        loser = "Red" if self.red_time == 0 else "Black"
-        winner = "Black" if loser == "Red" else "Red"
-        messagebox.showinfo("Time Out!", f"{loser} ran out of time! {winner} wins!")
-
-    self.root.after(1000, self.update_timer)
+    if not r_gen:
+      messagebox.showinfo("Game Over", "Black Wins!")
+      return True
+    if not b_gen:
+      messagebox.showinfo("Game Over", "Red Wins!")
+      return True
+    return False
 
   def update_ui(self):
     for r in range(10):
       for c in range(9):
-        bg_color = "#f39c12" if (r + c) % 2 == 0 else "#e67e22"
-        if self.selected_square == (r, c):
-          bg_color = "#7b68ee"
-        elif (r, c) in self.valid_moves:
-          bg_color = "#2ecc71"
+        btn = self.squares[(r, c)]
+        btn.config(bg="#fde3a7")
+        p = self.board[r][c]
+        if p:
+          sym = self.symbols[p["type"]]
+          fg_col = "#c0392b" if p["player"] == 1 else "#2c3e50"
+          btn.config(text=sym, fg=fg_col)
+        else:
+          btn.config(text="")
 
-        txt = self.board[r][c] if self.board[r][c] != "." else ""
-        self.buttons[(r, c)].config(text=txt, bg=bg_color)
+    turn_str = "Red's Turn" if self.turn == 1 else "Black's Turn"
+    color_code = "#c0392b" if self.turn == 1 else "#2c3e50"
+    self.status_label.config(text=turn_str, fg=color_code)
 
 
 if __name__ == "__main__":

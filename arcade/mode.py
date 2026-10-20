@@ -92,9 +92,10 @@ class ArcadeModeFrame(tk.Frame):
         row += 1
 
   def launch_game(self, script_path):
+    # Find root board_games dir (one level up from arcade folder)
     base_dir = os.path.dirname(
         os.path.dirname(os.path.abspath(__file__))
-    )  # root board_games dir
+    )
     full_path = os.path.join(base_dir, script_path)
 
     if not os.path.exists(full_path):
@@ -102,4 +103,11 @@ class ArcadeModeFrame(tk.Frame):
       return
 
     mode = self.selected_mode.get()
-    subprocess.Popen([sys.executable, full_path, mode])
+
+    # Automatically use the virtual environment python interpreter if it exists
+    venv_python = os.path.join(base_dir, "venv", "bin", "python3")
+    python_executable = (
+        venv_python if os.path.exists(venv_python) else sys.executable
+    )
+
+    subprocess.Popen([python_executable, full_path, mode])
