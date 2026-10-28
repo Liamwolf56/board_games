@@ -3,6 +3,22 @@ import subprocess
 import sys
 import tkinter as tk
 
+base_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Ensure local root directory is prioritized FIRST so local folders (chess, shogi, etc.) aren't shadowed by venv site-packages
+if base_dir not in sys.path:
+  sys.path.insert(0, base_dir)
+
+venv_site_packages = os.path.join(
+    base_dir,
+    "venv",
+    "lib",
+    f"python{sys.version_info.major}.{sys.version_info.minor}",
+    "site-packages",
+)
+if os.path.exists(venv_site_packages) and venv_site_packages not in sys.path:
+  sys.path.append(venv_site_packages)
+
 # Import modes from their respective folders
 from arcade.mode import ArcadeModeFrame
 from chess_puzzles.mode import ChessPuzzlesModeFrame
@@ -92,7 +108,6 @@ class MainHubApp:
     self.screens[screen_name].pack(fill=tk.BOTH, expand=True)
 
   def launch_game(self, script_path):
-    base_dir = os.path.dirname(os.path.abspath(__file__))
     full_path = os.path.join(base_dir, script_path)
 
     if not os.path.exists(full_path):
@@ -101,9 +116,10 @@ class MainHubApp:
 
     mode = self.selected_mode.get() if hasattr(self, "selected_mode") else "PvP"
 
-    # Automatically use virtual environment python if available
     venv_python = os.path.join(base_dir, "venv", "bin", "python3")
-    python_executable = venv_python if os.path.exists(venv_python) else sys.executable
+    python_executable = (
+        venv_python if os.path.exists(venv_python) else sys.executable
+    )
 
     subprocess.Popen([python_executable, full_path, mode])
 
