@@ -1,239 +1,293 @@
-import json
-import os
-import random
+import sys
 import tkinter as tk
 from tkinter import messagebox
 
 KING_DATA = {
-    "game": "Chess",
-    "title": "Grandmaster Dark King (Final Boss)",
-    "intro": (
-        "You have reached the final throne! Checkmate is inevitable, and my"
-        " shadow royal court will end your campaign here!"
-    ),
-    "victory": (
-        "CHECKMATE! Your king falls before the supreme strategic mastery of"
-        " shadows! Campaign reset!"
-    ),
-    "defeat": (
-        "IMPOSSIBLE! A final sacrifice shattered my royal defenses! You are"
-        " the ultimate champion of the Realm of 15 Kings!"
-    ),
+    "name": "General Xiangqi",
+    "desc": "Xiangqi (Chinese Chess)"
 }
 
+class XiangqiApp:
+    def __init__(self, root, player_name="Player", story_frame=None):
+        self.root = root
+        self.player_name = player_name
+        self.story_frame = story_frame
+        self.mode = "PvAI"
 
-class StoryChessBoss:
+        self.root.title(f"Story Mode: {self.player_name} vs General Xiangqi")
+        self.root.geometry("680x820")
+        self.root.config(bg="#f4c2c2")
 
-  def __init__(self, root):
-    self.root = root
-    self.root.title(f"Story Mode: {KING_DATA['title']}")
-    self.root.geometry("480x580")
-    self.root.config(bg="#1e272e")
+        self.board = [[None for _ in range(9)] for _ in range(10)]
+        self.turn = 1
+        self.selected_square = None
 
-    self.selected = None
-    self.turn = "Player"
-    self.game_over = False
+        self.time_red = 600
+        self.time_black = 600
+        self.timer_running = True
 
-    self.board = [
-        ["r", "n", "q", "k", "r"],
-        ["p", "p", "p", "p", "p"],
-        [".", ".", ".", ".", "."],
-        ["P", "P", "P", "P", "P"],
-        ["R", "N", "Q", "K", "R"],
-    ]
+        # Reliable Monochrome Unicode Symbols for Xiangqi
+        self.symbols = {
+            "GENERAL": "♔",
+            "ADVISOR": "★",
+            "ELEPHANT": "♗",
+            "HORSE": "♘",
+            "CHARIOT": "♖",
+            "CANNON": "◎",
+            "SOLDIER": "●",
+        }
 
-    self.symbols = {
-        "K": "♔",
-        "Q": "♕",
-        "R": "♖",
-        "N": "♘",
-        "P": "♙",
-        "k": "♚",
-        "q": "♛",
-        "r": "♜",
-        "n": "♞",
-        "p": "♟",
-        ".": "",
-    }
+        top_frame = tk.Frame(root, bg="#f4c2c2")
+        top_frame.pack(fill=tk.X, padx=10, pady=10)
 
-    tk.Label(
-        root,
-        text=f"👑 {KING_DATA['title']}",
-        font=("Arial", 14, "bold"),
-        fg="#ffdd59",
-        bg="#1e272e",
-    ).pack(pady=10)
+        tk.Button(
+            top_frame,
+            text="New Game",
+            bg="#c0392b",
+            fg="white",
+            font=("Arial", 9, "bold"),
+            command=self.new_game,
+        ).pack(side=tk.LEFT, padx=5)
 
-    d_frame = tk.Frame(root, bg="#2c3e50", padx=10, pady=8)
-    d_frame.pack(fill=tk.X, padx=15, pady=5)
-    tk.Label(
-        d_frame,
-        text=f"💬 \"{KING_DATA['intro']}\"",
-        font=("Arial", 10, "italic"),
-        fg="#00d8d6",
-        bg="#2c3e50",
-        wraplength=420,
-    ).pack()
+        tk.Button(
+            top_frame,
+            text="How to Play",
+            bg="#34495e",
+            fg="white",
+            font=("Arial", 9, "bold"),
+            command=self.show_instructions,
+        ).pack(side=tk.LEFT, padx=5)
 
-    self.status_lbl = tk.Label(
-        root,
-        text="Final Stage: Your Turn (White Pieces ♔) — Select a Piece",
-        font=("Arial", 11, "bold"),
-        fg="white",
-        bg="#1e272e",
-    )
-    self.status_lbl.pack(pady=5)
-
-    grid_frame = tk.Frame(root, bg="#2c3e50", padx=10, pady=10)
-    grid_frame.pack(pady=5)
-
-    self.grid_buttons = []
-    for r in range(5):
-      row_btns = []
-      for c in range(5):
-        bg_col = "#eeeed2" if (r + c) % 2 == 0 else "#769656"
-        btn = tk.Button(
-            grid_frame,
-            text=self.symbols[self.board[r][c]],
-            font=("Arial", 18, "bold"),
-            width=3,
-            height=1,
-            bg=bg_col,
-            command=lambda row=r, col=c: self.on_cell_click(row, col),
+        self.timer_label = tk.Label(
+            top_frame,
+            text=f"{self.player_name}: 10:00 | King: 10:00",
+            font=("Arial", 10, "bold"),
+            bg="#f4c2c2",
+            fg="#c0392b",
         )
-        btn.grid(row=r, column=c, padx=2, pady=2)
-        row_btns.append(btn)
-      self.grid_buttons.append(row_btns)
+        self.timer_label.pack(side=tk.RIGHT, padx=5)
 
-  def on_cell_click(self, r, c):
-    if self.game_over or self.turn != "Player":
-      return
-    piece = self.board[r][c]
-    if self.selected is None:
-      if piece != "." and piece.isupper():
-        self.selected = (r, c)
-        self.grid_buttons[r][c].config(bg="#f1c40f")
-    else:
-      sr, sc = self.selected
-      sel_piece = self.board[sr][sc]
-      if (sr, sc) == (r, c):
-        self.deselect()
-        return
-      elif piece != "." and piece.isupper():
-        self.deselect()
-        self.selected = (r, c)
-        self.grid_buttons[r][c].config(bg="#f1c40f")
-        return
+        self.status_label = tk.Label(
+            top_frame,
+            text=f"{self.player_name}'s Turn",
+            font=("Arial", 11, "bold"),
+            bg="#f4c2c2",
+            fg="#c0392b",
+        )
+        self.status_label.pack(side=tk.RIGHT, padx=10)
 
-      captured = self.board[r][c]
-      self.board[r][c] = sel_piece
-      self.board[sr][sc] = "."
-      self.deselect()
-      self.update_board_ui()
+        board_frame = tk.Frame(root, bg="#e67e22", bd=4, relief="solid")
+        board_frame.pack(pady=10)
 
-      if captured == "k":
-        self.handle_win()
-        return
+        self.squares = {}
+        for r in range(10):
+            for c in range(9):
+                btn = tk.Button(
+                    board_frame,
+                    text="",
+                    font=("Arial", 14, "bold"),
+                    width=3,
+                    height=1,
+                    bg="#fde3a7",
+                    command=lambda row=r, col=c: self.on_square_click(row, col),
+                )
+                btn.grid(row=r, column=c, padx=1, pady=1)
+                self.squares[(r, c)] = btn
 
-      self.turn = "AI"
-      self.status_lbl.config(text="Grandmaster Dark King is contemplating...")
-      self.root.after(700, self.ai_move)
+        self.setup_board()
+        self.update_ui()
+        self.run_timer()
 
-  def deselect(self):
-    if self.selected:
-      sr, sc = self.selected
-      bg_col = "#eeeed2" if (sr + sc) % 2 == 0 else "#769656"
-      self.grid_buttons[sr][sc].config(bg=bg_col)
-      self.selected = None
-    self.status_lbl.config(text="Final Stage: Your Turn (White Pieces ♔)")
+    def setup_board(self):
+        self.board = [[None for _ in range(9)] for _ in range(10)]
+        self.turn = 1
+        self.time_red = 600
+        self.time_black = 600
 
-  def ai_move(self):
-    if self.game_over:
-      return
-    ai_pieces = [
-        (r, c)
-        for r in range(5)
-        for c in range(5)
-        if self.board[r][c] != "." and self.board[r][c].islower()
-    ]
-    if not ai_pieces:
-      self.handle_win()
-      return
+        black_back = [
+            "CHARIOT",
+            "HORSE",
+            "ELEPHANT",
+            "ADVISOR",
+            "GENERAL",
+            "ADVISOR",
+            "ELEPHANT",
+            "HORSE",
+            "CHARIOT",
+        ]
+        for c, p in enumerate(black_back):
+            self.board[0][c] = {"type": p, "player": 2}
 
-    moves = []
-    for sr, sc in ai_pieces:
-      for dr in range(-1, 2):
-        for dc in range(-1, 2):
-          tr, tc = sr + dr, sc + dc
-          if 0 <= tr < 5 and 0 <= tc < 5:
-            target = self.board[tr][tc]
-            if target == "." or target.isupper():
-              priority = 2 if target == "K" else (1 if target.isupper() else 0)
-              moves.append((priority, (sr, sc), (tr, tc)))
+        self.board[2][1] = {"type": "CANNON", "player": 2}
+        self.board[2][7] = {"type": "CANNON", "player": 2}
+        for c in range(0, 9, 2):
+            self.board[3][c] = {"type": "SOLDIER", "player": 2}
 
-    if not moves:
-      self.handle_win()
-      return
+        for c in range(0, 9, 2):
+            self.board[6][c] = {"type": "SOLDIER", "player": 1}
+        self.board[7][1] = {"type": "CANNON", "player": 1}
+        self.board[7][7] = {"type": "CANNON", "player": 1}
 
-    moves.sort(key=lambda x: x[0], reverse=True)
-    best_move = moves[0] if moves[0][0] > 0 else random.choice(moves)
-    _, (sr, sc), (tr, tc) = best_move
-    captured = self.board[tr][tc]
-    self.board[tr][tc] = self.board[sr][sc]
-    self.board[sr][sc] = "."
-    self.update_board_ui()
+        red_back = [
+            "CHARIOT",
+            "HORSE",
+            "ELEPHANT",
+            "ADVISOR",
+            "GENERAL",
+            "ADVISOR",
+            "ELEPHANT",
+            "HORSE",
+            "CHARIOT",
+        ]
+        for c, p in enumerate(red_back):
+            self.board[9][c] = {"type": p, "player": 1}
 
-    if captured == "K":
-      self.handle_loss()
-      return
+    def new_game(self):
+        self.setup_board()
+        self.selected_square = None
+        self.update_ui()
 
-    self.turn = "Player"
-    self.status_lbl.config(
-        text="Final Stage: Your Turn (White Pieces ♔) — Select a Piece"
-    )
+    def show_instructions(self):
+        messagebox.showinfo(
+            "How to Play Xiangqi",
+            f"• Xiangqi is Chinese Chess played across a river against General Xiangqi.\n• Cannons must jump over another piece to capture.\n• Goal: Capture General Xiangqi's General (♔) to win the campaign battle!",
+        )
 
-  def update_board_ui(self):
-    for r in range(5):
-      for c in range(5):
+    def run_timer(self):
+        if self.timer_running:
+            if self.turn == 1:
+                self.time_red = max(0, self.time_red - 1)
+            else:
+                self.time_black = max(0, self.time_black - 1)
+
+            mr, sr = divmod(self.time_red, 60)
+            mb, sb = divmod(self.time_black, 60)
+            self.timer_label.config(
+                text=f"{self.player_name}: {mr:02d}:{sr:02d} | King: {mb:02d}:{sb:02d}"
+            )
+
+            if self.time_red == 0 or self.time_black == 0:
+                if self.time_red == 0:
+                    if self.story_frame:
+                        self.story_frame.end_run(was_victory=False)
+                    messagebox.showinfo("Time Out", f"{self.player_name} ran out of time! General Xiangqi wins!")
+                else:
+                    if self.story_frame:
+                        self.story_frame.kings_defeated_this_run += 1
+                    messagebox.showinfo("Time Out", f"General Xiangqi ran out of time! {self.player_name} wins!")
+                self.root.destroy()
+                return
+
+            self.root.after(1000, self.run_timer)
+
+    def on_square_click(self, r, c):
+        if self.turn != 1:
+            return
         piece = self.board[r][c]
-        bg_col = "#eeeed2" if (r + c) % 2 == 0 else "#769656"
-        self.grid_buttons[r][c].config(text=self.symbols[piece], bg=bg_col)
 
-  def handle_win(self):
-    self.game_over = True
-    messagebox.showinfo(
-        "ULTIMATE VICTORY! 🏆👑",
-        f"You have conquered the Realm of 15 Kings!\n\n\"{KING_DATA['defeat']}\"",
-    )
-    self.update_save(win=True)
-    self.root.destroy()
+        if self.selected_square is None:
+            if piece and piece["player"] == 1:
+                self.selected_square = (r, c)
+                self.highlight_squares(r, c)
+        else:
+            sr, sc = self.selected_square
+            if (sr, sc) == (r, c):
+                self.selected_square = None
+                self.update_ui()
+                return
 
-  def handle_loss(self):
-    self.game_over = True
-    messagebox.showerror(
-        "PERMADEATH! 💀 Campaign Reset",
-        f"{KING_DATA['title']} laughs from the shadow throne:\n\n\"{KING_DATA['victory']}\"",
-    )
-    self.update_save(win=False)
-    self.root.destroy()
+            target = self.board[r][c]
+            if target is None or target["player"] != 1:
+                self.board[r][c] = self.board[sr][sc]
+                self.board[sr][sc] = None
+                self.selected_square = None
+                self.turn = 2
+                self.update_ui()
 
-  def update_save(self, win):
-    save_path = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        "progress.json",
-    )
-    if os.path.exists(save_path):
-      try:
-        with open(save_path, "r") as f:
-          data = json.load(f)
-        data["current_stage_idx"] = data["current_stage_idx"] + 1 if win else 0
-        with open(save_path, "w") as f:
-          json.dump(data, f)
-      except Exception:
-        pass
+                if not self.check_game_over():
+                    self.root.after(400, self.ai_move)
+            else:
+                self.selected_square = (r, c)
+                self.highlight_squares(r, c)
 
+    def highlight_squares(self, r, c):
+        self.update_ui()
+        self.squares[(r, c)].config(bg="#7b68ee")
+        for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+            nr, nc = r + dr, c + dc
+            if 0 <= nr < 10 and 0 <= nc < 9:
+                self.squares[(nr, nc)].config(bg="#85bb65")
 
-if __name__ == "__main__":
-  root = tk.Tk()
-  app = StoryChessBoss(root)
-  root.mainloop()
+    def ai_move(self):
+        if self.check_game_over():
+            return
+        import random
+
+        moves = []
+        for r in range(10):
+            for c in range(9):
+                p = self.board[r][c]
+                if p and p["player"] == 2:
+                    for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                        nr, nc = r + dr, c + dc
+                        if 0 <= nr < 10 and 0 <= nc < 9:
+                            t = self.board[nr][nc]
+                            if t is None or t["player"] != 2:
+                                moves.append(((r, c), (nr, nc)))
+
+        if moves:
+            (sr, sc), (tr, tc) = random.choice(moves)
+            self.board[tr][tc] = self.board[sr][sc]
+            self.board[sr][sc] = None
+
+        self.turn = 1
+        self.update_ui()
+        self.check_game_over()
+
+    def check_game_over(self):
+        r_gen, b_gen = False, False
+        for r in range(10):
+            for c in range(9):
+                p = self.board[r][c]
+                if p and p["type"] == "GENERAL":
+                    if p["player"] == 1:
+                        r_gen = True
+                    elif p["player"] == 2:
+                        b_gen = True
+
+        if not r_gen:
+            self.timer_running = False
+            if self.story_frame:
+                self.story_frame.end_run(was_victory=False)
+            messagebox.showinfo("Defeat", "General Xiangqi has defeated your forces!")
+            self.root.destroy()
+            return True
+        if not b_gen:
+            self.timer_running = False
+            if self.story_frame:
+                self.story_frame.kings_defeated_this_run += 1
+            messagebox.showinfo("King Defeated!", f"🏆 {self.player_name} defeated General Xiangqi!")
+            self.root.destroy()
+            return True
+        return False
+
+    def update_ui(self):
+        for r in range(10):
+            for c in range(9):
+                btn = self.squares[(r, c)]
+                btn.config(bg="#fde3a7")
+                p = self.board[r][c]
+                if p:
+                    sym = self.symbols[p["type"]]
+                    fg_col = "#c0392b" if p["player"] == 1 else "#2c3e50"
+                    btn.config(text=sym, fg=fg_col)
+                else:
+                    btn.config(text="")
+
+        turn_str = f"{self.player_name}'s Turn" if self.turn == 1 else "General Xiangqi's Turn"
+        color_code = "#c0392b" if self.turn == 1 else "#2c3e50"
+        self.status_label.config(text=turn_str, fg=color_code)
+
+def run_mode(parent, player_name="Player", story_frame=None):
+    app = XiangqiApp(parent, player_name=player_name, story_frame=story_frame)
+    return app

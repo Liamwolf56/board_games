@@ -1,165 +1,411 @@
-import json
-import os
+import random
 import sys
 import tkinter as tk
 from tkinter import messagebox
 
-# Add parent directory to path to import arcade yahtzee module
-sys.path.append(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-)
-from yahtzee.app import YahtzeeApp
-
 KING_DATA = {
-    "game": "Yahtzee",
-    "title": "High Roller Chance",
-    "intro": (
-        "Roll the dice and test your fate! Every combination favors my high"
-        " stakes!"
-    ),
-    "victory": (
-        "Yahtzee! Your high rolls fell short of my winning scorecard!"
-    ),
-    "defeat": (
-        "IMPOSSIBLE! You rolled a perfect Yahtzee and broke my winning streak!"
-    ),
+    "name": "High Roller Yahtzee",
+    "desc": "Yahtzee"
 }
 
+class YahtzeeApp:
+    def __init__(self, root, player_name="Player", story_frame=None):
+        self.root = root
+        self.player_name = player_name
+        self.story_frame = story_frame
+        self.mode = "PvAI"
 
-class StoryYahtzeeWrapper:
+        self.root.title(f"Story Mode: {self.player_name} vs High Roller Yahtzee")
+        self.root.geometry("820x760")
+        self.root.config(bg="#1e272e")
 
-  def __init__(self, root):
-    self.root = root
-    self.root.title(f"Story Mode: {KING_DATA['title']}")
-    self.root.geometry("520x160")
-    self.root.config(bg="#1e272e")
+        self.turn = "Player 1"
+        self.rolls_left = 3
+        self.game_over = False
 
-    # Story Header Banner
-    header = tk.Frame(root, bg="#2c3e50", padx=10, pady=10)
-    header.pack(fill=tk.BOTH, expand=True, padx=15, pady=15)
+        self.dice = [1, 1, 1, 1, 1]
+        self.held = [False, False, False, False, False]
+        self.dice_rolled_this_turn = False
 
-    tk.Label(
-        header,
-        text=f"👑 {KING_DATA['title']}",
-        font=("Arial", 14, "bold"),
-        fg="#ffdd59",
-        bg="#2c3e50",
-    ).pack()
-    tk.Label(
-        header,
-        text=f"💬 \"{KING_DATA['intro']}\"",
-        font=("Arial", 10, "italic"),
-        fg="#00d8d6",
-        bg="#2c3e50",
-        wraplength=460,
-    ).pack(pady=5)
+        self.categories = [
+            "Aces",
+            "Twos",
+            "Threes",
+            "Fours",
+            "Fives",
+            "Sixes",
+            "3 of a Kind",
+            "4 of a Kind",
+            "Full House",
+            "Small Straight",
+            "Large Straight",
+            "Yahtzee",
+            "Chance",
+        ]
 
-    # Launch actual Arcade Yahtzee App in a separate window in PvAI mode
-    self.arcade_win = tk.Toplevel(root)
-    self.arcade_app = YahtzeeApp(self.arcade_win, mode="PvAI")
+        self.p1_scores = {cat: None for cat in self.categories}
+        self.p2_scores = {cat: None for cat in self.categories}
 
-    # Intercept finish_turn to handle story progression and permadeath
-    original_finish_turn = self.arcade_app.finish_turn
+        # Timers (300 seconds / 5 mins)
+        self.p1_time = 300
+        self.p2_time = 300
+        self.timer_running = True
 
-    def custom_finish_turn():
-      self.arcade_app.dice_rolled_this_turn = False
-      self.arcade_app.rolls_left = 3
-      self.arcade_app.held = [False, False, False, False, False]
-      self.arcade_app.roll_btn.config(text="🎲 Roll Dice (3 left)", bg="#2ecc71")
+        # Top Control Bar
+        top_frame = tk.Frame(root, bg="#1e272e")
+        top_frame.pack(fill=tk.X, padx=10, pady=10)
 
-      p1_done = all(v is not None for v in self.arcade_app.p1_scores.values())
-      p2_done = all(v is not None for v in self.arcade_app.p2_scores.values())
+        tk.Button(
+            top_frame,
+            text="How to Play",
+            bg="#f39c12",
+            fg="white",
+            font=("Arial", 9, "bold"),
+            command=self.show_rules,
+        ).pack(side=tk.LEFT)
 
-      if (
-          p1_done
-          and p2_done
-          or self.arcade_app.p1_time == 0
-          or self.arcade_app.p2_time == 0
-      ):
-        self.arcade_app.game_over = True
-        self.arcade_app.timer_running = False
-
-        p1_total = sum(
-            v for v in self.arcade_app.p1_scores.values() if v is not None
+        self.timer_label = tk.Label(
+            top_frame,
+            text=f"{self.player_name}: 05:00 | King: 05:00",
+            font=("Arial", 11, "bold"),
+            bg="#1e272e",
+            fg="white",
         )
-        p2_total = sum(
-            v for v in self.arcade_app.p2_scores.values() if v is not None
+        self.timer_label.pack(side=tk.RIGHT)
+
+        self.status_label = tk.Label(
+            root,
+            text=f"Turn: {self.player_name} - Click 'Roll Dice' to start your turn",
+            font=("Arial", 12, "bold"),
+            bg="#1e272e",
+            fg="#00d8d6",
         )
+        self.status_label.pack(pady=5)
 
-        # Player 1 is user, Player 2 is AI
-        user_won = p1_total > p2_total
+        # Dice Container
+        dice_frame = tk.Frame(root, bg="#2c3e50", bd=3, relief="solid")
+        dice_frame.pack(pady=10, padx=10, fill=tk.X)
 
-        try:
-          if user_won:
-            messagebox.showinfo(
-                "VICTORY! 🏆",
-                f"{KING_DATA['title']} cries out in defeat:\n\n\"{KING_DATA['defeat']}\"",
+        tk.Label(
+            dice_frame,
+            text="Click dice to HOLD them between rolls",
+            font=("Arial", 10, "bold"),
+            bg="#2c3e50",
+            fg="#ffdd59",
+        ).pack(pady=3)
+
+        self.dice_buttons_frame = tk.Frame(dice_frame, bg="#2c3e50")
+        self.dice_buttons_frame.pack(pady=5)
+
+        self.dice_buttons = []
+        for i in range(5):
+            btn = tk.Button(
+                self.dice_buttons_frame,
+                text="[ 1 ]",
+                font=("Arial", 14, "bold"),
+                width=8,
+                height=2,
+                bg="#ecf0f1",
+                fg="#2c3e50",
+                command=lambda idx=i: self.toggle_hold(idx),
             )
-            self.update_save(win=True)
-          else:
-            messagebox.showerror(
-                "PERMADEATH! 💀 Game Over",
-                f"{KING_DATA['title']} gloats over your defeat:\n\n\"{KING_DATA['victory']}\"\n\nRun"
-                " Reset!",
+            btn.pack(side=tk.LEFT, padx=6)
+            self.dice_buttons.append(btn)
+
+        control_sub_frame = tk.Frame(dice_frame, bg="#2c3e50")
+        control_sub_frame.pack(pady=5)
+
+        self.roll_btn = tk.Button(
+            control_sub_frame,
+            text="🎲 Roll Dice (3 left)",
+            font=("Arial", 11, "bold"),
+            bg="#2ecc71",
+            fg="white",
+            command=self.roll_dice,
+        )
+        self.roll_btn.pack(side=tk.LEFT, padx=10)
+
+        # Scorecard Container
+        score_container = tk.Frame(root, bg="#2c3e50", bd=3, relief="solid")
+        score_container.pack(pady=5, padx=10, fill=tk.BOTH, expand=True)
+
+        tk.Label(
+            score_container,
+            text=f"YAHTZEE SCORECARD ({self.player_name} vs High Roller Yahtzee)",
+            font=("Arial", 10, "bold"),
+            bg="#2c3e50",
+            fg="#3498db",
+        ).pack(pady=3)
+
+        self.score_buttons_frame = tk.Frame(score_container, bg="#2c3e50")
+        self.score_buttons_frame.pack(pady=5, fill=tk.BOTH, expand=True)
+
+        self.score_buttons = {}
+        for cat in self.categories:
+            row_f = tk.Frame(self.score_buttons_frame, bg="#2c3e50")
+            row_f.pack(fill=tk.X, pady=1)
+
+            lbl = tk.Label(
+                row_f,
+                text=cat,
+                font=("Arial", 10, "bold"),
+                width=16,
+                anchor="w",
+                bg="#2c3e50",
+                fg="white",
             )
-            self.update_save(win=False)
-        except Exception:
-          pass
+            lbl.pack(side=tk.LEFT, padx=5)
 
-        try:
-          self.arcade_win.destroy()
-        except Exception:
-          pass
-        try:
-          self.root.destroy()
-        except Exception:
-          pass
-        return
+            p1_btn = tk.Button(
+                row_f,
+                text="-",
+                font=("Arial", 9, "bold"),
+                width=12,
+                bg="#34495e",
+                fg="white",
+                command=lambda c=cat: self.score_category(c),
+            )
+            p1_btn.pack(side=tk.LEFT, padx=5)
+            self.score_buttons[("Player 1", cat)] = p1_btn
 
-      self.arcade_app.turn = (
-          "Player 2" if self.arcade_app.turn == "Player 1" else "Player 1"
-      )
-      color_code = (
-          "#00d8d6" if self.arcade_app.turn == "Player 1" else "#ff4757"
-      )
-      self.arcade_app.status_label.config(
-          text=f"Turn: {self.arcade_app.turn} - Click 'Roll Dice' to start",
-          fg=color_code,
-      )
-      self.arcade_app.update_ui()
+            p2_btn = tk.Button(
+                row_f,
+                text="-",
+                font=("Arial", 9, "bold"),
+                width=12,
+                bg="#34495e",
+                fg="white",
+                state=tk.DISABLED,
+            )
+            p2_btn.pack(side=tk.LEFT, padx=5)
+            self.score_buttons[("Player 2", cat)] = p2_btn
 
-      if (
-          self.arcade_app.mode == "PvAI"
-          and self.arcade_app.turn == "Player 2"
-          and not self.arcade_app.game_over
-      ):
-        self.arcade_app.root.after(800, self.arcade_app.ai_turn)
+        self.update_ui()
+        self.update_timer()
 
-    self.arcade_app.finish_turn = custom_finish_turn
-    self.arcade_win.protocol("WM_DELETE_WINDOW", lambda: self.root.destroy())
+    def show_rules(self):
+        rules = (
+            "YAHTZEE (STORY MODE):\n\n"
+            "1. Roll the 5 dice up to 3 times per turn against High Roller Yahtzee.\n"
+            "2. Click dice to HOLD them between rolls.\n"
+            "3. Select an open category on your scorecard to lock in your points.\n"
+            "4. Fill all categories and finish with a higher total score to defeat the King!"
+        )
+        messagebox.showinfo("How to Play - Yahtzee", rules)
 
-  def update_save(self, win):
-    save_path = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        "progress.json",
-    )
-    if os.path.exists(save_path):
-      try:
-        with open(save_path, "r") as f:
-          data = json.load(f)
+    def toggle_hold(self, idx):
+        if not self.dice_rolled_this_turn or self.game_over or self.turn != "Player 1":
+            return
+        self.held[idx] = not self.held[idx]
+        self.update_ui()
 
-        if win:
-          data["current_stage_idx"] += 1
-        else:
-          data["current_stage_idx"] = 0
+    def roll_dice(self):
+        if self.rolls_left <= 0 or self.game_over or self.turn != "Player 1":
+            return
 
-        with open(save_path, "w") as f:
-          json.dump(data, f)
-      except Exception:
-        pass
+        for i in range(5):
+            if not self.held[i]:
+                self.dice[i] = random.randint(1, 6)
 
+        self.rolls_left -= 1
+        self.dice_rolled_this_turn = True
+        self.roll_btn.config(
+            text=f"🎲 Roll Dice ({self.rolls_left} left)",
+            bg="#e67e22" if self.rolls_left > 0 else "#7f8c8d",
+        )
+        self.update_ui()
 
-if __name__ == "__main__":
-  root = tk.Tk()
-  app = StoryYahtzeeWrapper(root)
-  root.mainloop()
+    def calculate_potential_score(self, cat, dice_vals):
+        counts = {n: dice_vals.count(n) for n in range(1, 7)}
+        total = sum(dice_vals)
+
+        if cat == "Aces":
+            return counts[1] * 1
+        elif cat == "Twos":
+            return counts[2] * 2
+        elif cat == "Threes":
+            return counts[3] * 3
+        elif cat == "Fours":
+            return counts[4] * 4
+        elif cat == "Fives":
+            return counts[5] * 5
+        elif cat == "Sixes":
+            return counts[6] * 6
+        elif cat == "3 of a Kind":
+            return total if any(c >= 3 for c in counts.values()) else 0
+        elif cat == "4 of a Kind":
+            return total if any(c >= 4 for c in counts.values()) else 0
+        elif cat == "Full House":
+            has_3 = 3 in counts.values()
+            has_2 = 2 in counts.values()
+            has_5 = 5 in counts.values()
+            return 25 if (has_3 and has_2) or has_5 else 0
+        elif cat == "Small Straight":
+            sorted_u = sorted(list(set(dice_vals)))
+            straights = [[1, 2, 3, 4], [2, 3, 4, 5], [3, 4, 5, 6]]
+            for s in straights:
+                if all(val in sorted_u for val in s):
+                    return 30
+            return 0
+        elif cat == "Large Straight":
+            sorted_u = sorted(list(set(dice_vals)))
+            if sorted_u == [1, 2, 3, 4, 5] or sorted_u == [2, 3, 4, 5, 6]:
+                return 40
+            return 0
+        elif cat == "Yahtzee":
+            return 50 if any(c == 5 for c in counts.values()) else 0
+        elif cat == "Chance":
+            return total
+        return 0
+
+    def score_category(self, cat):
+        if not self.dice_rolled_this_turn or self.game_over or self.turn != "Player 1":
+            messagebox.showwarning(
+                "Roll First", "Please roll the dice at least once before scoring!"
+            )
+            return
+
+        scores_dict = self.p1_scores
+        if scores_dict[cat] is not None:
+            messagebox.showwarning(
+                "Category Taken", "This category has already been scored!"
+            )
+            return
+
+        score = self.calculate_potential_score(cat, self.dice)
+        scores_dict[cat] = score
+
+        self.finish_turn()
+
+    def finish_turn(self):
+        self.dice_rolled_this_turn = False
+        self.rolls_left = 3
+        self.held = [False, False, False, False, False]
+        self.roll_btn.config(text="🎲 Roll Dice (3 left)", bg="#2ecc71")
+
+        p1_done = all(v is not None for v in self.p1_scores.values())
+        p2_done = all(v is not None for v in self.p2_scores.values())
+
+        if p1_done and p2_done:
+            self.game_over = True
+            self.timer_running = False
+            p1_total = sum(v for v in self.p1_scores.values() if v is not None)
+            p2_total = sum(v for v in self.p2_scores.values() if v is not None)
+
+            if p1_total > p2_total:
+                if self.story_frame:
+                    self.story_frame.kings_defeated_this_run += 1
+                messagebox.showinfo("King Defeated!", f"🏆 {self.player_name} defeated High Roller Yahtzee ({p1_total} to {p2_total})!")
+                self.root.destroy()
+            elif p2_total > p1_total:
+                if self.story_frame:
+                    self.story_frame.end_run(was_victory=False)
+                messagebox.showinfo("Defeat", f"High Roller Yahtzee defeated you ({p2_total} to {p1_total})!")
+                self.root.destroy()
+            else:
+                if self.story_frame:
+                    self.story_frame.end_run(was_victory=False)
+                messagebox.showinfo("Game Over", f"Tie Game ({p1_total} to {p2_total}). Run ended.")
+                self.root.destroy()
+            return
+
+        self.turn = "Player 2" if self.turn == "Player 1" else "Player 1"
+        display_name = self.player_name if self.turn == "Player 1" else "High Roller Yahtzee"
+        color_code = "#00d8d6" if self.turn == "Player 1" else "#ff4757"
+        self.status_label.config(
+            text=f"Turn: {display_name}", fg=color_code
+        )
+        self.update_ui()
+
+        if self.mode == "PvAI" and self.turn == "Player 2" and not self.game_over:
+            self.root.after(800, self.ai_turn)
+
+    def ai_turn(self):
+        if self.game_over:
+            return
+
+        for i in range(5):
+            self.dice[i] = random.randint(1, 6)
+        self.rolls_left = 0
+        self.dice_rolled_this_turn = True
+        self.update_ui()
+        self.root.after(800, self.ai_score)
+
+    def ai_score(self):
+        if self.game_over:
+            return
+
+        for cat in self.categories:
+            if self.p2_scores[cat] is None:
+                self.p2_scores[cat] = self.calculate_potential_score(cat, self.dice)
+                break
+
+        self.finish_turn()
+
+    def update_ui(self):
+        for i, val in enumerate(self.dice):
+            btn = self.dice_buttons[i]
+            hld = self.held[i]
+            bg_col = "#f1c40f" if hld else "#ecf0f1"
+            txt = f"[{val}]" + ("\n(HOLD)" if hld else "")
+            btn.config(text=txt, bg=bg_col)
+
+        for cat in self.categories:
+            p1_val = self.p1_scores[cat]
+            p1_btn = self.score_buttons[("Player 1", cat)]
+            if p1_val is not None:
+                p1_btn.config(
+                    text=str(p1_val), state=tk.DISABLED, bg="#7f8c8d", fg="white"
+                )
+            else:
+                if self.turn == "Player 1" and self.dice_rolled_this_turn:
+                    potential = self.calculate_potential_score(cat, self.dice)
+                    p1_btn.config(
+                        text=f"-> {potential}", state=tk.NORMAL, bg="#27ae60", fg="white"
+                    )
+                else:
+                    p1_btn.config(text="-", state=tk.NORMAL, bg="#34495e", fg="white")
+
+            p2_val = self.p2_scores[cat]
+            p2_btn = self.score_buttons[("Player 2", cat)]
+            if p2_val is not None:
+                p2_btn.config(
+                    text=str(p2_val), state=tk.DISABLED, bg="#7f8c8d", fg="white"
+                )
+            else:
+                p2_btn.config(text="-", state=tk.DISABLED, bg="#34495e", fg="white")
+
+    def update_timer(self):
+        if self.timer_running and not self.game_over:
+            if self.turn == "Player 1":
+                if self.p1_time > 0:
+                    self.p1_time -= 1
+            else:
+                if self.p2_time > 0:
+                    self.p2_time -= 1
+
+            p1_min, p1_sec = divmod(self.p1_time, 60)
+            p2_min, p2_sec = divmod(self.p2_time, 60)
+            self.timer_label.config(
+                text=f"{self.player_name}: {p1_min:02d}:{p1_sec:02d} | King: {p2_min:02d}:{p2_sec:02d}"
+            )
+
+            if self.p1_time == 0 or self.p2_time == 0:
+                self.game_over = True
+                self.timer_running = False
+                if self.p1_time == 0:
+                    if self.story_frame:
+                        self.story_frame.end_run(was_victory=False)
+                    messagebox.showinfo("Time Out!", f"{self.player_name} ran out of time! High Roller Yahtzee wins!")
+                else:
+                    if self.story_frame:
+                        self.story_frame.kings_defeated_this_run += 1
+                    messagebox.showinfo("Time Out!", "High Roller Yahtzee ran out of time! You win!")
+                self.root.destroy()
+                return
+
+        self.root.after(1000, self.update_timer)
+
+def run_mode(parent, player_name="Player", story_frame=None):
+    app = YahtzeeApp(parent, player_name=player_name, story_frame=story_frame)
+    return app

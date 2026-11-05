@@ -1,351 +1,226 @@
 import json
 import os
 import random
-import subprocess
 import sys
 import tkinter as tk
-from tkinter import messagebox, simpledialog
+from tkinter import messagebox, simpledialog, Toplevel, Label, Button
 
-# Import individual King modules from their subfolders
-from story.animal_upon_animal.mode import KING_DATA as k_animal
-from story.battleship.mode import KING_DATA as k_battleship
-from story.checkers.mode import KING_DATA as k_checkers
-from story.chess.mode import KING_DATA as k_chess
-from story.chaturanga.mode import KING_DATA as k_chaturanga
-from story.connect4.mode import KING_DATA as k_connect4
-from story.mastermind.mode import KING_DATA as k_mastermind
-from story.monza.mode import KING_DATA as k_monza
-from story.otrio.mode import KING_DATA as k_otrio
-from story.reversi.mode import KING_DATA as k_reversi
-from story.sequence_for_kids.mode import KING_DATA as k_sequence
-from story.shogi.mode import KING_DATA as k_shogi
-from story.tictactoe.mode import KING_DATA as k_tictactoe
-from story.xiangqi.mode import KING_DATA as k_xiangqi
-from story.yahtzee.mode import KING_DATA as k_yahtzee
+from leaderboard import record_score, load_leaderboard
+from story.sequence_for_kids.mode import KING_DATA as k1
+from story.connect4.mode import KING_DATA as k2
+from story.otrio.mode import KING_DATA as k3
+from story.battleship.mode import KING_DATA as k4
+from story.animal_upon_animal.mode import KING_DATA as k5
+from story.monza.mode import KING_DATA as k6
+from story.tic_tac_toe.mode import KING_DATA as k7
+from story.checkers.mode import KING_DATA as k8
+from story.reversi.mode import KING_DATA as k9
+from story.shogi.mode import KING_DATA as k10
+from story.xiangqi.mode import KING_DATA as k11
+from story.chaturanga.mode import KING_DATA as k12
+from story.yahtzee.mode import KING_DATA as k13
+from story.mastermind.mode import KING_DATA as k14
+from story.chess.mode import KING_DATA as k15
 
-base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
+# Master pools: 14 randomizable gauntlet kings + 1 fixed final boss
+GAUNTLET_POOL = [
+    ("story.sequence_for_kids.mode", {"name": "High Lord Wild Unicorn", "desc": "Sequence for Kids"}),
+    ("story.connect4.mode", {"name": "Gridmaster First Strike", "desc": "Connect 4"}),
+    ("story.otrio.mode", {"name": "High Lord Concentric Ring", "desc": "Otrio"}),
+    ("story.battleship.mode", {"name": "Admiral Blind Grid", "desc": "Battleship"}),
+    ("story.animal_upon_animal.mode", {"name": "High Sovereign Apex Stack", "desc": "Animal Upon Animal"}),
+    ("story.monza.mode", {"name": "High Lord Turbo Combo", "desc": "Monza"}),
+    ("story.tic_tac_toe.mode", {"name": "King Ultimate Gridlock", "desc": "Tic-Tac-Toe"}),
+    ("story.checkers.mode", {"name": "High King Crown Jump", "desc": "Checkers"}),
+    ("story.reversi.mode", {"name": "Sovereign Flipside", "desc": "Reversi"}),
+    ("story.shogi.mode", {"name": "Emperor Dragon King", "desc": "Shogi"}),
+    ("story.xiangqi.mode", {"name": "Grand General Sky Cannon", "desc": "Xiangqi"}),
+    ("story.chaturanga.mode", {"name": "Raja Four-Fold War", "desc": "Chaturanga"}),
+    ("story.yahtzee.mode", {"name": "High Lord Five-of-a-Kind", "desc": "Yahtzee"}),
+    ("story.mastermind.mode", {"name": "Grandmaster Cipher Lock", "desc": "Mastermind"}),
+]
+FINAL_BOSS = ("story.chess.mode", {"name": "King Chess.com", "desc": "Chess"})
 
 class StoryModeFrame(tk.Frame):
+    def __init__(self, parent, controller):
+        super().__init__(parent)
+        self.controller = controller
+        
+        self.player_name = None
+        self.kings_defeated_this_run = 0
+        self.current_run_nodes = []
+        
+        self.title_label = tk.Label(self, text="⚔️ Story Mode: King's Gauntlet ⚔️", font=("Arial", 16, "bold"))
+        self.title_label.pack(pady=10)
+        
+        self.score_label = tk.Label(
+            self, 
+            text="Start a new run to begin!", 
+            font=("Arial", 11, "bold"), 
+            fg="#2196F3"
+        )
+        self.score_label.pack(pady=2)
 
-  def __init__(self, parent, hub_app):
-    super().__init__(parent, bg="#1e272e")
-    self.hub_app = hub_app
-    self.save_file = os.path.join(base_dir, "story", "progress.json")
+        tk.Button(
+            self, 
+            text="🏆 View Leaderboard", 
+            font=("Arial", 11, "bold"), 
+            bg="#ffd700", 
+            fg="#000000",
+            command=self.show_leaderboard
+        ).pack(pady=5)
+        
+        tk.Label(
+            self, 
+            text="Defeat as many Kings as possible! Every run has a randomized order. A single loss ends your run.", 
+            font=("Arial", 10, "italic")
+        ).pack(pady=5)
+        
+        canvas = tk.Canvas(self, height=350)
+        scrollbar = tk.Scrollbar(self, orient="vertical", command=canvas.yview)
+        self.nodes_frame = tk.Frame(canvas)
+        
+        self.nodes_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=self.nodes_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        canvas.pack(side="left", fill="both", expand=True, padx=20)
+        scrollbar.pack(side="right", fill="y")
+        
+        tk.Button(self, text="Back to Main Menu", command=self.go_back).pack(pady=10)
+        
+        self.current_run_nodes = list(GAUNTLET_POOL) + [FINAL_BOSS]
+        self.refresh_map()
 
-    # Map all imported modules into master roster dictionary
-    self.master_kings = {
-        k["game"]: k
-        for k in [
-            k_tictactoe,
-            k_monza,
-            k_animal,
-            k_sequence,
-            k_otrio,
-            k_battleship,
-            k_mastermind,
-            k_yahtzee,
-            k_connect4,
-            k_reversi,
-            k_checkers,
-            k_chaturanga,
-            k_xiangqi,
-            k_shogi,
-            k_chess,
-        ]
-    }
+    def start_new_run_if_needed(self):
+        if not self.player_name:
+            user_input = simpledialog.askstring(
+                "New Story Campaign", 
+                "Enter Player Name for this Gauntlet Run:", 
+                initialvalue="Liam"
+            )
+            if user_input and user_input.strip():
+                self.player_name = user_input.strip()
+            else:
+                self.player_name = "Challenger"
+                
+            self.kings_defeated_this_run = 0
+            
+            # Randomize the 14 gauntlet nodes for this run
+            shuffled_pool = list(GAUNTLET_POOL)
+            random.shuffle(shuffled_pool)
+            self.current_run_nodes = shuffled_pool + [FINAL_BOSS]
+            
+            self.update_header()
+            self.refresh_map()
 
-    self.player_name = "Challenger"
-    self.campaign_order = []
-    self.current_stage_idx = 0
-    self.high_score = 0
+    def update_header(self):
+        if self.player_name:
+            self.title_label.config(text=f"⚔️ Story Mode: {self.player_name}'s Campaign ⚔️")
+            self.score_label.config(text=f"Current Run Progress: {self.kings_defeated_this_run}/15 Kings Defeated")
 
-    # Header Banner
-    tk.Label(
-        self,
-        text="👑 ROGUELIKE STORY MODE: REALM OF 15 KINGS 👑",
-        font=("Arial", 14, "bold"),
-        bg="#1e272e",
-        fg="#ffdd59",
-    ).pack(pady=10)
+    def end_run(self, was_victory=False):
+        final_score = self.kings_defeated_this_run
+        name = self.player_name or "Challenger"
+        
+        record_score(name, final_score, beat_chess=was_victory)
+        
+        if was_victory:
+            messagebox.showinfo(
+                "🏆 GRAND CHAMPION! 🏆",
+                f"CONGRATULATIONS {name}!\nYou defeated all 15 Kings and conquered King Chess.com!\n"
+                f"Your score of {final_score} with ⭐ status has been recorded on the Leaderboard."
+            )
+        else:
+            messagebox.showinfo(
+                "☠️ GAME OVER ☠️",
+                f"Your run has ended, {name}.\nFinal Score: {final_score} Kings Defeated.\n"
+                f"Your result has been posted to the Leaderboard!"
+            )
+            
+        self.player_name = None
+        self.kings_defeated_this_run = 0
+        self.current_run_nodes = list(GAUNTLET_POOL) + [FINAL_BOSS]
+        self.title_label.config(text="⚔️ Story Mode: King's Gauntlet ⚔️")
+        self.score_label.config(text="Start a new run to begin!")
+        self.refresh_map()
 
-    # Score & Player Info Bar
-    self.info_bar = tk.Label(
-        self,
-        text="",
-        font=("Arial", 11, "bold"),
-        bg="#2c3e50",
-        fg="#00d8d6",
-        pady=5,
-    )
-    self.info_bar.pack(fill=tk.X, padx=20, pady=5)
+    def go_back(self):
+        if self.controller and hasattr(self.controller, "show_screen"):
+            self.controller.show_screen("arcade")
+        else:
+            self.pack_forget()
 
-    # Main layout
-    main_frame = tk.Frame(self, bg="#1e272e")
-    main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+    def show_leaderboard(self):
+        lb_window = Toplevel(self)
+        lb_window.title("Story Mode Leaderboard")
+        lb_window.geometry("400x450")
+        
+        Label(lb_window, text="🏆 Hall of Champions 🏆", font=("Arial", 14, "bold")).pack(pady=10)
+        
+        data = load_leaderboard()
+                
+        if not data:
+            Label(lb_window, text="No scores recorded yet!", font=("Arial", 10)).pack(pady=20)
+        else:
+            for i, entry in enumerate(data):
+                disp_name = entry.get("display_name", entry.get("name", "Player"))
+                kings = entry.get("kings_defeated", 0)
+                text = f"{i+1}. {disp_name} — {kings}/15 Kings Defeated"
+                Label(lb_window, text=text, font=("Arial", 11)).pack(anchor="w", padx=25, pady=4)
+                
+        Button(lb_window, text="Close", command=lb_window.destroy, width=12).pack(pady=15)
 
-    # Left: Map Listbox
-    left_frame = tk.Frame(main_frame, bg="#2c3e50", width=250)
-    left_frame.pack(side=tk.LEFT, fill=tk.Y, padx=5)
+    def refresh_map(self):
+        for widget in self.nodes_frame.winfo_children():
+            widget.destroy()
+            
+        for idx, (mod_path, king_info) in enumerate(self.current_run_nodes):
+            state = "normal" if self.kings_defeated_this_run >= idx else "disabled"
+            is_done = " ✅" if self.kings_defeated_this_run > idx else ""
+            prefix = "👑 FINAL BOSS: " if idx == 14 else f"King {idx+1}: "
+            
+            btn = tk.Button(
+                self.nodes_frame,
+                text=f"{prefix}{king_info['name']} ({king_info['desc']}){is_done}",
+                font=("Arial", 10, "bold" if idx == 14 else "normal"),
+                bg="#e1bee7" if idx == 14 else "#f0f0f0",
+                width=42,
+                state=state,
+                command=lambda i=idx, mp=mod_path: self.launch_generic(i, mp)
+            )
+            btn.pack(pady=3)
 
-    tk.Label(
-        left_frame,
-        text="Campaign Path:",
-        font=("Arial", 10, "bold"),
-        bg="#2c3e50",
-        fg="white",
-    ).pack(pady=5)
-
-    self.stage_listbox = tk.Listbox(
-        left_frame,
-        font=("Arial", 10, "bold"),
-        bg="#34495e",
-        fg="white",
-        width=26,
-        height=18,
-        selectbackground="#0984e3",
-    )
-    self.stage_listbox.pack(padx=5, pady=5, fill=tk.Y, expand=True)
-
-    tk.Button(
-        left_frame,
-        text="🔄 Start Fresh Run",
-        font=("Arial", 9, "bold"),
-        bg="#d35400",
-        fg="white",
-        command=self.prompt_new_run,
-    ).pack(pady=5)
-
-    # Right: King Details & Action Button
-    right_frame = tk.Frame(main_frame, bg="#2c3e50", bd=2, relief="solid")
-    right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=5)
-
-    self.boss_title_label = tk.Label(
-        right_frame,
-        text="",
-        font=("Arial", 13, "bold"),
-        bg="#2c3e50",
-        fg="#ffdd59",
-    )
-    self.boss_title_label.pack(pady=10)
-
-    self.dialogue_box = tk.Text(
-        right_frame,
-        wrap=tk.WORD,
-        font=("Arial", 11),
-        bg="#ecf0f1",
-        fg="#2c3e50",
-        height=12,
-        padx=15,
-        pady=15,
-    )
-    self.dialogue_box.pack(padx=10, pady=5, fill=tk.BOTH, expand=True)
-
-    btn_frame = tk.Frame(right_frame, bg="#2c3e50")
-    btn_frame.pack(pady=15)
-
-    tk.Button(
-        btn_frame,
-        text="⚔️ Challenge King in Combat",
-        font=("Arial", 12, "bold"),
-        bg="#e74c3c",
-        fg="white",
-        padx=15,
-        pady=8,
-        command=self.challenge_king,
-    ).pack(pady=5)
-
-    self.after(100, self.load_or_generate_campaign)
-
-  def load_or_generate_campaign(self):
-    if os.path.exists(self.save_file):
-      try:
-        with open(self.save_file, "r") as f:
-          data = json.load(f)
-          self.player_name = data.get("player_name", "Challenger")
-          self.campaign_order = data.get("campaign_order", [])
-          self.current_stage_idx = data.get("current_stage_idx", 0)
-          self.high_score = data.get("high_score", 0)
-          if len(self.campaign_order) == 15:
-            self.refresh_ui()
+    def launch_generic(self, idx, mod_name):
+        if idx > 0 and self.kings_defeated_this_run < idx:
+            messagebox.showwarning("Node Locked", "You must defeat the previous Kings to unlock this node!")
             return
-      except Exception:
-        pass
-
-    self.create_new_campaign()
-
-  def create_new_campaign(self):
-    name = simpledialog.askstring(
-        "New Strategist",
-        "Enter your Player Name for this Campaign:",
-        initialvalue=self.player_name,
-    )
-    if name and name.strip():
-      self.player_name = name.strip()
-
-    # FULL 15-KING CAMPAIGN MODE
-    other_games = [g for g in self.master_kings.keys() if g != "Chess"]
-    random.shuffle(other_games)
-    self.campaign_order = other_games + ["Chess"]
-    self.current_stage_idx = 0
-    self.save_progress()
-    self.refresh_ui()
-
-  def save_progress(self):
-    os.makedirs(os.path.dirname(self.save_file), exist_ok=True)
-    with open(self.save_file, "w") as f:
-      json.dump(
-          {
-              "player_name": self.player_name,
-              "campaign_order": self.campaign_order,
-              "current_stage_idx": self.current_stage_idx,
-              "high_score": max(self.high_score, self.current_stage_idx),
-          },
-          f,
-      )
-
-  def prompt_new_run(self):
-    if messagebox.askyesno(
-        "Reset Campaign",
-        "Start a brand new campaign run? Current progress will be reset!",
-    ):
-      self.create_new_campaign()
-
-  def refresh_ui(self):
-    total_stages = len(self.campaign_order)
-    self.info_bar.config(
-        text=(
-            f"👤 Player: {self.player_name}   |   ⚔️ Kings Beat:"
-            f" {self.current_stage_idx}/{total_stages}   |   🏆 Record Score:"
-            f" {max(self.high_score, self.current_stage_idx)}"
-        )
-    )
-
-    self.stage_listbox.delete(0, tk.END)
-    for idx, game_name in enumerate(self.campaign_order):
-      king = self.master_kings.get(game_name, {"title": game_name})
-      if idx < self.current_stage_idx:
-        status = "✅"
-      elif idx == self.current_stage_idx:
-        status = "⚔️"
-      else:
-        status = "🔒"
-
-      stage_num = idx + 1
-      label = (
-          f"{status} Final Boss: {king.get('title', game_name)}"
-          if game_name == "Chess"
-          else f"{status} Stage {stage_num}: {game_name}"
-      )
-      self.stage_listbox.insert(tk.END, label)
-
-    if self.campaign_order:
-      self.stage_listbox.selection_set(
-          min(self.current_stage_idx, len(self.campaign_order) - 1)
-      )
-      self.load_king_details(
-          min(self.current_stage_idx, len(self.campaign_order) - 1)
-      )
-
-  def load_king_details(self, idx):
-    if not self.campaign_order or idx >= len(self.campaign_order):
-      return
-    game_name = self.campaign_order[idx]
-    king = self.master_kings.get(
-        game_name, {"title": game_name, "intro": "Prepare yourself!"}
-    )
-
-    stage_str = (
-        "FINAL BOSS" if game_name == "Chess" else f"Stage {idx + 1}"
-    )
-    self.boss_title_label.config(
-        text=f"👑 {stage_str}: {king.get('title', game_name)} ({game_name})"
-    )
-
-    self.dialogue_box.config(state=tk.NORMAL)
-    self.dialogue_box.delete("1.0", tk.END)
-
-    self.dialogue_box.insert(
-        tk.END,
-        f"🗣️ KING'S BATTLE TAUNT:\n\"{king.get('intro', '')}\"\n\n",
-        "taunt",
-    )
-    self.dialogue_box.insert(
-        tk.END,
-        "💡 Rule of the Realm:\nWhen you challenge this King, you must defeat"
-        " them in combat. If you lose, your ironman run resets from Stage"
-        " 1!\n",
-        "rule",
-    )
-
-    self.dialogue_box.tag_config(
-        "taunt", font=("Arial", 11, "bold"), foreground="#d35400"
-    )
-    self.dialogue_box.tag_config(
-        "rule", font=("Arial", 10), foreground="#2c3e50"
-    )
-    self.dialogue_box.config(state=tk.DISABLED)
-
-  def challenge_king(self):
-    if not self.campaign_order or self.current_stage_idx >= len(
-        self.campaign_order
-    ):
-      return
-    game_name = self.campaign_order[self.current_stage_idx]
-
-    folder_mapping = {
-        "Tic-Tac-Toe": "tictactoe",
-        "Monza": "monza",
-        "Animal Upon Animal": "animal_upon_animal",
-        "Sequence for Kids": "sequence_for_kids",
-        "Otrio": "otrio",
-        "Battleship": "battleship",
-        "Mastermind": "mastermind",
-        "Yahtzee": "yahtzee",
-        "Connect 4": "connect4",
-        "Reversi": "reversi",
-        "Checkers": "checkers",
-        "Chaturanga": "chaturanga",
-        "Xiangqi": "xiangqi",
-        "Shogi": "shogi",
-        "Chess": "chess",
-    }
-    folder_name = folder_mapping.get(
-        game_name, game_name.lower().replace(" ", "_")
-    )
-
-    script_path = os.path.join(base_dir, "story", folder_name, "mode.py")
-
-    if not os.path.exists(script_path):
-      messagebox.showerror(
-          "Error",
-          f"Story Mode script for {game_name} not found at:\n{script_path}",
-      )
-      return
-
-    venv_python = os.path.join(base_dir, "venv", "bin", "python3")
-    python_executable = (
-        venv_python if os.path.exists(venv_python) else sys.executable
-    )
-
-    proc = subprocess.Popen([python_executable, script_path])
-    self.after(500, self.check_process_completion, proc)
-
-  def check_process_completion(self, proc):
-    if proc.poll() is None:
-      self.after(500, self.check_process_completion, proc)
-    else:
-      old_idx = self.current_stage_idx
-      self.load_or_generate_campaign()
-
-      if self.current_stage_idx > old_idx and self.current_stage_idx < len(
-          self.campaign_order
-      ):
-        next_game = self.campaign_order[self.current_stage_idx]
-        king = self.master_kings.get(next_game, {})
-        messagebox.showinfo(
-            "NEXT STAGE! ⚔️",
-            f"Advancing to Stage {self.current_stage_idx + 1}!\nFacing:"
-            f" {king.get('title', next_game)}",
-        )
-        self.challenge_king()
+            
+        self.start_new_run_if_needed()
+        if not self.player_name:
+            return
+            
+        import importlib
+        try:
+            mod = importlib.import_module(mod_name)
+        except Exception as e:
+            messagebox.showerror("Module Error", f"Could not load game module {mod_name}:\n{e}")
+            return
+            
+        game_window = Toplevel(self)
+        king_name = self.current_run_nodes[idx][1]['name']
+        game_window.title(f"Node {idx+1}: {king_name} — Player: {self.player_name}")
+        
+        try:
+            app = mod.run_mode(game_window, player_name=self.player_name, story_frame=self)
+        except Exception as e:
+            messagebox.showerror("Launch Error", f"Could not start game:\n{e}")
+            game_window.destroy()
+            return
+            
+        self.wait_window(game_window)
+        self.refresh_map()

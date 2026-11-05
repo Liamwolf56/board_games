@@ -1,119 +1,232 @@
-import json
-import os
 import sys
 import tkinter as tk
 from tkinter import messagebox
-import importlib.util
-
-# Bulletproof load of local chess/app.py, avoiding python-chess package collision
-root_dir = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
-chess_app_path = os.path.join(root_dir, "chess", "app.py")
-spec = importlib.util.spec_from_file_location("chess_app_local", chess_app_path)
-chess_app_mod = importlib.util.module_from_spec(spec)
-sys.modules["chess_app_local"] = chess_app_mod
-spec.loader.exec_module(chess_app_mod)
-ChessApp = chess_app_mod.ChessApp
+import chess
 
 KING_DATA = {
-    "game": "Chess",
-    "title": "Chess.com Final Boss",
-    "intro": (
-        "Welcome to the ultimate grandmaster engine. Checkmate awaits your"
-        " king!"
-    ),
-    "victory": (
-        "Grandmaster engine dominance! Your king has been decisively"
-        " checkmated!"
-    ),
-    "defeat": (
-        "IMPOSSIBLE! You checkmated the grandmaster engine! The realm is"
-        " conquered!"
-    ),
+    "name": "Grandmaster Chess",
+    "desc": "Chess"
 }
 
+class ChessApp:
+    def __init__(self, root, player_name="Player", story_frame=None):
+        self.root = root
+        self.player_name = player_name
+        self.story_frame = story_frame
+        self.mode = "PvAI"
 
-class StoryChessWrapper:
+        self.root.title(f"Story Mode: {self.player_name} vs Grandmaster Chess")
+        self.root.geometry("650x780")
+        self.root.config(bg="#2c3e50")
 
-  def __init__(self, root):
-    self.root = root
-    self.root.title(f"Story Mode: {KING_DATA['title']}")
-    self.root.geometry("520x160")
-    self.root.config(bg="#1e272e")
+        self.board = chess.Board()
+        self.selected_square = None
+        self.buttons = {}
 
-    header = tk.Frame(root, bg="#2c3e50", padx=10, pady=10)
-    header.pack(fill=tk.BOTH, expand=True, padx=15, pady=15)
+        # Timer variables (in seconds)
+        self.white_time = 300  # 5 minutes
+        self.black_time = 300
+        self.timer_running = True
 
-    tk.Label(
-        header,
-        text=f"👑 {KING_DATA['title']}",
-        font=("Arial", 14, "bold"),
-        fg="#ffdd59",
-        bg="#2c3e50",
-    ).pack()
-    tk.Label(
-        header,
-        text=f"💬 \"{KING_DATA['intro']}\"",
-        font=("Arial", 10, "italic"),
-        fg="#00d8d6",
-        bg="#2c3e50",
-        wraplength=460,
-    ).pack(pady=5)
+        # Header frame for Instructions and Timer
+        top_frame = tk.Frame(root, bg="#2c3e50")
+        top_frame.pack(fill=tk.X, padx=10, pady=10)
 
-    self.arcade_win = tk.Toplevel(root)
-    self.arcade_app = ChessApp(self.arcade_win, mode="PvAI")
-    self.arcade_win.protocol(
-        "WM_DELETE_WINDOW", lambda: self.handle_exit(False)
-    )
-
-  def handle_exit(self, win):
-    try:
-      if win:
-        messagebox.showinfo(
-            "VICTORY! 🏆",
-            f"{KING_DATA['title']} cries out in defeat:\n\n\"{KING_DATA['defeat']}\"",
+        rules_btn = tk.Button(
+            top_frame,
+            text="📖 How to Play Chess",
+            bg="#f39c12",
+            fg="white",
+            font=("Arial", 10, "bold"),
+            command=self.show_rules,
         )
-        self.update_save(win=True)
-      else:
-        messagebox.showerror(
-            "PERMADEATH! 💀 Game Over",
-            f"{KING_DATA['title']} gloats over your defeat:\n\n\"{KING_DATA['victory']}\"\n\nRun"
-            " Reset!",
+        rules_btn.pack(side=tk.LEFT)
+
+        self.timer_label = tk.Label(
+            top_frame,
+            text=f"{self.player_name}: 05:00 | King: 05:00",
+            font=("Arial", 11, "bold"),
+            bg="#2c3e50",
+            fg="white",
         )
-        self.update_save(win=False)
-    except Exception:
-      pass
+        self.timer_label.pack(side=tk.RIGHT)
 
-    try:
-      self.arcade_win.destroy()
-    except Exception:
-      pass
-    try:
-      self.root.destroy()
-    except Exception:
-      pass
+        # Board Frame
+        self.canvas_frame = tk.Frame(root, bg="#34495e", bd=3, relief="solid")
+        self.canvas_frame.pack(pady=10)
 
-  def update_save(self, win):
-    save_path = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        "progress.json",
-    )
-    if os.path.exists(save_path):
-      try:
-        with open(save_path, "r") as f:
-          data = json.load(f)
-        if win:
-          data["current_stage_idx"] += 1
+        self.pieces_unicode = {
+            "P": "♙",
+            "R": "♖",
+            "N": "♘",
+            "B": "♗",
+            "Q": "♕",
+            "K": "♔",
+            "p": "♟",
+            "r": "♜",
+            "n": "♞",
+            "b": "♝",
+            "q": "♛",
+            "k": "♚",
+        }
+
+        self.create_board_ui()
+        self.update_board_ui()
+        self.update_timer()
+
+    def show_rules(self):
+        rules = (
+            "CHESS (STORY MODE):\n\n"
+            f"• Objective: Defeat Grandmaster Chess by checkingmate his King (♔).\n"
+            "• Pawns (♙): Move forward 1 square (or 2 on first move), capture diagonally.\n"
+            "• Knights (♘): Move in an L-shape and can jump over pieces.\n"
+            "• Bishops (♗): Move diagonally any number of squares.\n"
+            "• Rooks (♖): Move horizontally or vertically any number of squares.\n"
+            "• Queen (♕): Combines Rook and Bishop powers.\n"
+            "• King (♔): Moves 1 square in any direction."
+        )
+        messagebox.showinfo("How to Play - Chess", rules)
+
+    def create_board_ui(self):
+        for r in range(8):
+            for c in range(8):
+                board_row = 7 - r
+                board_col = c
+                bg_color = "#f0d9b5" if (r + c) % 2 == 0 else "#b58863"
+
+                btn = tk.Button(
+                    self.canvas_frame,
+                    text="",
+                    font=("Arial", 28),
+                    width=2,
+                    height=1,
+                    bg=bg_color,
+                    activebackground=bg_color,
+                    command=lambda row=board_row, col=board_col: self.square_clicked(
+                        row, col
+                    ),
+                )
+                btn.grid(row=r, column=c)
+                self.buttons[(board_row, board_col)] = btn
+
+    def square_clicked(self, row, col):
+        if self.board.turn != chess.WHITE:
+            return
+
+        square_index = chess.square(col, row)
+
+        if self.selected_square is None:
+            piece = self.board.piece_at(square_index)
+            if piece and piece.color == self.board.turn:
+                self.selected_square = square_index
+                self.highlight_squares(square_index)
         else:
-          data["current_stage_idx"] = 0
-        with open(save_path, "w") as f:
-          json.dump(data, f)
-      except Exception:
-        pass
+            move = chess.Move(self.selected_square, square_index)
+            if (
+                self.board.piece_at(self.selected_square).piece_type == chess.PAWN
+                and (row == 7 or row == 0)
+            ):
+                move = chess.Move(self.selected_square, square_index, promotion=chess.QUEEN)
 
+            if move in self.board.legal_moves:
+                self.board.push(move)
+                self.selected_square = None
+                self.update_board_ui()
 
-if __name__ == "__main__":
-  root = tk.Tk()
-  app = StoryChessWrapper(root)
-  root.mainloop()
+                if self.board.is_game_over():
+                    self.show_game_over()
+                else:
+                    self.root.after(400, self.make_ai_move)
+            else:
+                piece = self.board.piece_at(square_index)
+                if piece and piece.color == self.board.turn:
+                    self.selected_square = square_index
+                    self.highlight_squares(square_index)
+                else:
+                    self.selected_square = None
+                    self.update_board_ui()
+
+    def make_ai_move(self):
+        if self.board.is_game_over():
+            return
+
+        import random
+        legal_moves = list(self.board.legal_moves)
+        if legal_moves:
+            ai_move = random.choice(legal_moves)
+            self.board.push(ai_move)
+            self.update_board_ui()
+            if self.board.is_game_over():
+                self.show_game_over()
+
+    def highlight_squares(self, square):
+        self.update_board_ui()
+        r = chess.square_rank(square)
+        c = chess.square_file(square)
+        self.buttons[(r, c)].config(bg="#7b68ee")
+        for move in self.board.legal_moves:
+            if move.from_square == square:
+                tr = chess.square_rank(move.to_square)
+                tc = chess.square_file(move.to_square)
+                self.buttons[(tr, tc)].config(bg="#a9dfbf")
+
+    def update_board_ui(self):
+        for r in range(8):
+            for c in range(8):
+                square_index = chess.square(c, r)
+                piece = self.board.piece_at(square_index)
+                bg_color = "#f0d9b5" if (r + c) % 2 != 0 else "#b58863"
+                text = self.pieces_unicode.get(piece.symbol(), "") if piece else ""
+                self.buttons[(r, c)].config(text=text, bg=bg_color)
+
+    def update_timer(self):
+        if self.timer_running and not self.board.is_game_over():
+            if self.board.turn == chess.WHITE:
+                if self.white_time > 0:
+                    self.white_time -= 1
+            else:
+                if self.black_time > 0:
+                    self.black_time -= 1
+
+            w_min, w_sec = divmod(self.white_time, 60)
+            b_min, b_sec = divmod(self.black_time, 60)
+            self.timer_label.config(
+                text=f"{self.player_name}: {w_min:02d}:{w_sec:02d} | King: {b_min:02d}:{b_sec:02d}"
+            )
+
+            if self.white_time == 0 or self.black_time == 0:
+                self.timer_running = False
+                if self.white_time == 0:
+                    if self.story_frame:
+                        self.story_frame.end_run(was_victory=False)
+                    messagebox.showinfo("Time Out", f"{self.player_name} ran out of time! Grandmaster Chess wins!")
+                else:
+                    if self.story_frame:
+                        self.story_frame.kings_defeated_this_run += 1
+                    messagebox.showinfo("Time Out", f"Grandmaster Chess ran out of time! {self.player_name} wins!")
+                self.root.destroy()
+                return
+
+        self.root.after(1000, self.update_timer)
+
+    def show_game_over(self):
+        self.timer_running = False
+        result = self.board.result()
+        
+        if result == "1-0":
+            if self.story_frame:
+                self.story_frame.kings_defeated_this_run += 1
+            messagebox.showinfo("King Defeated!", f"🏆 {self.player_name} checkmated Grandmaster Chess!")
+        elif result == "0-1":
+            if self.story_frame:
+                self.story_frame.end_run(was_victory=False)
+            messagebox.showinfo("Defeat", "Grandmaster Chess checkmated you!")
+        else:
+            if self.story_frame:
+                self.story_frame.end_run(was_victory=False)
+            messagebox.showinfo("Game Over", f"Draw! Result: {result}")
+        self.root.destroy()
+
+def run_mode(parent, player_name="Player", story_frame=None):
+    app = ChessApp(parent, player_name=player_name, story_frame=story_frame)
+    return app
