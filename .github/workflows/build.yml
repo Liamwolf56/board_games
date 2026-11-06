@@ -1,0 +1,29 @@
+name: Build Game Executable
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install dependencies & PyInstaller
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+      - name: Build with PyInstaller
+        run: |
+          pyinstaller --onedir --noconsole main_hub.py
+      - name: Archive game folder
+        run: Compress-Archive -Path dist/main_hub -DestinationPath RealmOf15Kings-Windows.zip
+      - name: Upload Release Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Windows-Game-Build
+          path: RealmOf15Kings-Windows.zip
