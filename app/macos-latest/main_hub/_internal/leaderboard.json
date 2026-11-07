@@ -1,0 +1,56 @@
+[
+    {
+        "name": "Liam",
+        "display_name": "Liam\u2b50",
+        "kings_defeated": 15,
+        "has_star": true
+    },
+    {
+        "name": "ii",
+        "display_name": "ii",
+        "kings_defeated": 3,
+        "beat_chess": false
+    },
+    {
+        "name": "ffff",
+        "display_name": "ffff",
+        "kings_defeated": 2,
+        "beat_chess": false
+    },
+    {
+        "name": "ooo",
+        "display_name": "ooo",
+        "kings_defeated": 1,
+        "has_star": false
+    },
+    {
+        "name": "ikk",
+        "display_name": "ikk",
+        "kings_defeated": 1,
+        "has_star": false
+    },
+    {
+        "name": "aaa",
+        "display_name": "aaa",
+        "kings_defeated": 1,
+        "beat_chess": false
+    },
+    {
+        "name": "Liam",
+        "display_name": "Liam",
+        "kings_defeated": 0,
+        "beat_chess": false
+    },
+    {
+        "name": "Liam",
+        "display_name": "Liam",
+        "kings_defeated": 0,
+        "beat_chess": false
+    },
+    {
+        "name": "oo",
+        "display_name": "oo",
+        "kings_defeated": 0,
+        "beat_chess": false
+    }
+]
