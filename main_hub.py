@@ -2,6 +2,7 @@ import os
 import subprocess
 import sys
 import tkinter as tk
+from tkinter import messagebox
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -18,6 +19,21 @@ venv_site_packages = os.path.join(
 )
 if os.path.exists(venv_site_packages) and venv_site_packages not in sys.path:
   sys.path.append(venv_site_packages)
+
+# When packaged as an app, games are started by re-running this program
+# with the game's script as the first argument.
+if (
+    getattr(sys, "frozen", False)
+    and len(sys.argv) > 1
+    and sys.argv[1].lower().endswith(".py")
+):
+  import runpy
+
+  script = sys.argv[1]
+  sys.argv = sys.argv[1:]
+  sys.path.insert(0, os.path.dirname(script))
+  runpy.run_path(script, run_name="__main__")
+  sys.exit(0)
 
 # Import modes from their respective folders
 from arcade.mode import ArcadeModeFrame
@@ -111,15 +127,19 @@ class MainHubApp:
     full_path = os.path.join(base_dir, script_path)
 
     if not os.path.exists(full_path):
-      tk.messagebox.showerror("Error", f"Game script not found:\n{full_path}")
+      messagebox.showerror("Error", f"Game script not found:\n{full_path}")
       return
 
     mode = self.selected_mode.get() if hasattr(self, "selected_mode") else "PvP"
 
-    venv_python = os.path.join(base_dir, "venv", "bin", "python3")
-    python_executable = (
-        venv_python if os.path.exists(venv_python) else sys.executable
-    )
+    if getattr(sys, "frozen", False):
+      # Packaged app: re-run this same program (see block near the top)
+      python_executable = sys.executable
+    else:
+      venv_python = os.path.join(base_dir, "venv", "bin", "python3")
+      python_executable = (
+          venv_python if os.path.exists(venv_python) else sys.executable
+      )
 
     subprocess.Popen([python_executable, full_path, mode])
 
