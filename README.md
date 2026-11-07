@@ -1,68 +1,97 @@
-👑 Ultimate Board Game Hub & Roguelike Campaign
-Welcome to the ultimate Python/Tkinter Board Game Hub! This project features a rich suite of classic strategy and puzzle games packaged with multiple game modes, including an ironman roguelike campaign, arcade quick-play, history tracking, and chess tactical puzzles.
+# 🎮 Master Board Game Hub
 
-🎮 Game Modes
-🏰 Story Mode (Realm of 15 Kings): An ironman-style roguelike campaign where you battle through 15 sequential boss games. Lose a match or run out of time, and your run resets to Stage 1! Managed with persistent saves (progress.json).
+A collection of classic board games in one app, with a story campaign where you take on 15 Kings, one game at a time.
 
-🕹️ Arcade Mode: Jump straight into any of your favorite board games for a quick standalone match without campaign pressure.
+## ⬇️ How to Download and Play
 
-♟️ Chess Puzzles: Test your tactical vision and problem-solving skills with dedicated chess puzzle challenges.
+**You don't need to install Python or use a terminal.**
 
-📊 History Mode: Track your past match performance, stats, and run history across the hub.
+### Windows
+1. Click the green **Code** button at the top of this page.
+2. Click **Download ZIP**.
+3. Find the ZIP in your Downloads folder, right-click it, and choose **Extract All**.
+4. Open the extracted folder and double-click **play.bat**.
+5. The game opens. Have fun!
 
-📋 Included Games & Modules
-Chess (with Grandmaster AI & puzzles)
+> **Windows shows a blue "Windows protected your PC" warning?**
+> This is normal for small games made by individuals. Click **More info**, then **Run anyway**.
 
-Shogi (Japanese Chess)
+### Mac and Linux (experimental)
+The Windows version is the one tested most. Mac and Linux builds are included but have not been fully tested. To try them:
+1. Download and extract the ZIP as above.
+2. Open a terminal in the extracted folder and run:
+   ```
+   bash play.sh
+   ```
 
-Xiangqi (Chinese Chess)
+If something doesn't work, please open an issue on this page and tell me what happened.
 
-Chaturanga
+## 🕹️ The Game Modes
 
-Yahtzee (High Roller variant)
+The top of the app has four buttons. Click one to switch modes.
 
-Otrio (Arch-Sentinel variant)
+### 🕹️ Arcade Mode
+Pick any game from the list and play it right away, without any story. *(Edit this line: describe how many players or which game options Arcade has, for example playing against a friend or the computer.)*
 
-Tic-Tac-Toe
+### 📖 Story Mode: The King's Gauntlet
+Defeat as many Kings as you can!
 
-Connect 4
+- There are **15 Kings**. Each one challenges you to a different game.
+- The first 14 Kings come in a **random order** every run. The 15th is always the **Final Boss**.
+- **One loss ends your run.** You win a game to move on to the next King.
+- When your run ends, your score is saved to the **Leaderboard**.
+- Beat all 15 Kings, including the Final Boss, to earn the **⭐ Grand Champion** star next to your name.
 
-Checkers
+**The Kings and their games:**
 
-Reversi
+| King | Game |
+|------|------|
+| High Lord Wild Unicorn | Sequence for Kids |
+| Gridmaster First Strike | Connect 4 |
+| High Lord Concentric Ring | Otrio |
+| Admiral Blind Grid | Battleship |
+| High Sovereign Apex Stack | Animal Upon Animal |
+| High Lord Turbo Combo | Monza |
+| King Ultimate Gridlock | Tic-Tac-Toe |
+| High King Crown Jump | Checkers |
+| Sovereign Flipside | Reversi |
+| Emperor Dragon King | Shogi |
+| Grand General Sky Cannon | Xiangqi |
+| Raja Four-Fold War | Chaturanga |
+| High Lord Five-of-a-Kind | Yahtzee |
+| Grandmaster Cipher Lock | Mastermind |
+| 👑 **King Chess.com (Final Boss)** | Chess |
 
-Battleship
+**How to play Story Mode:**
+1. Click **Story Mode**.
+2. Click the first King on the list. Enter your name when asked.
+3. Win the game to unlock the next King. Beaten Kings get a ✅.
+4. Click **🏆 View Leaderboard** at any time to see the top 10 scores.
 
-Mastermind
+> Your leaderboard scores are saved on your own computer, in a folder called `board_games` in your home folder.
 
-Monza
+### 📜 History Mode
+*(Edit this line: describe what History Mode does, for example looking at past games.)*
 
-Animal Upon Animal
+### ♟️ Chess Puzzles
+Solve chess puzzles on the board. *(Edit this line: add details such as how many puzzles there are or how to get hints.)*
 
-Sequence for Kids
+## ❓ Troubleshooting
 
-🚀 How to Play (No Terminal Needed!)
-Go to the GitHub repository page and click the green <> Code button, then select Download ZIP.
+| Problem | What to do |
+|---------|-----------|
+| Windows shows a blue warning | Click **More info → Run anyway**. |
+| Nothing happens when I double-click | Make sure you **extracted** the ZIP first. Don't run it from inside the ZIP. |
+| The leaderboard is empty | Scores are saved when a run **ends** (a loss or a win). Finish a run to see yours. |
+| A game won't open | Tell me which one in an issue on this page. |
 
-Extract the downloaded ZIP folder anywhere on your computer.
+## 🛠️ For Developers
 
-Open the extracted folder:
+The game is written in Python with Tkinter. To run it from source:
 
-Windows users: Double-click play.bat
+```
+pip install python-chess
+python main_hub.py
+```
 
-Mac / Linux users: Double-click play.sh
-
-(The script automatically handles everything else and launches the game hub instantly!)
-
-🛠️ Project Structure
-main_hub.py — Central hub application and launcher.
-
-arcade/ — Quick-play arcade mode modules.
-
-story/ — Roguelike campaign frame, bosses, and progress.json.
-
-chess_puzzles/ — Tactical chess puzzle challenges.
-
-history/ — Match history and statistics manager.
-
-play.bat & play.sh — Automatic double-click execution scripts.
+The ready-to-play app in the `app` folder is built automatically by GitHub Actions (**Actions → Build app into repo → Run workflow**).
